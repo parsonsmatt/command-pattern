@@ -44,16 +44,85 @@ document.getElementsByTagName( 'head' )[0].appendChild( link );
     <div class="reveal">
       <div class="slides">
 
-        <section>
-          <h1>
-            Design Patterns from Abstract Math
-          </h1>
-        </section>
+<section data-markdown="intro.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
+<section data-markdown="sets.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
+<section data-markdown="algebra.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
+<section data-markdown="monoid.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
 
-        <section data-background="curry.JPG">
+<section data-markdown="category.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
 
-        </section>
+<section data-markdown="functor.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
+
+<section data-markdown="natural.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
+
+<section data-markdown="end.md"  
+         data-separator="^\n\n\n"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
+         data-charset="iso-8859-15">
+</section>
+
       </div>
     </div>
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+Reveal.initialize({
+  controls: true,
+  progress: true,
+  history: true,
+  center: true,
+
+  transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+    // Optional reveal.js plugins
+  dependencies: [
+  { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+  { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+  { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+    { src: 'plugin/math/math.js', async: true },
+    { src: 'plugin/highlight/highlight.js', callback: function() { hljs.initHighlightingOnLoad(); } },
+      { src: 'plugin/zoom-js/zoom.js', async: true },
+      { src: 'plugin/notes/notes.js', async: true }
+  ]
+});
+                </script>
   </body>
 </html>
