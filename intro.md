@@ -3,7 +3,7 @@
 ## From Abstract Math
 
 
-*TODO: bg: cover of "Design Patterns: Elements of Reusable Software"*
+<!-- .slide: data-background="design-patterns-cover.jpg" -->
 
 Note:
 
@@ -12,28 +12,28 @@ whole bunch of different software design elements that they recognized while
 working on big enterprise software. Examples include:
 
 
-*TODO: bg: factory*
+<!-- .slide: data-background="factory-pattern.gif" -->
 
 Note:
 
 The factory pattern, where you restrict instantiation of objects so you can have more control over their creation.
 
 
-*TODO: bg: visitor*
+<!-- .slide: data-background="visitor-pattern.jpg" -->
 
 Note:
 
 The visitor pattern, which allows you to consolidate the logic around traversing multiple similar cases.
 
 
-*TODO: bg: command*
+<!-- .slide: data-background="command-pattern.gif" -->
 
 Note:
 
 The command pattern, where you separate the logic behind deciding what actions to do and executing those actions.
 
 
-*TODO: bg: supercharged java bean*
+<!-- .slide: data-background="java-beans.jpg" -->
 
 Note:
 

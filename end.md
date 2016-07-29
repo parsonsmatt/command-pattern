@@ -2,4 +2,4 @@
 
 Matt Parsons
 
-Haskell @ Seller Labs
+Doin' Haskell @ Seller Labs
