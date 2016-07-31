@@ -184,7 +184,8 @@ body {
 .reveal pre.stretch code {
   height: 100%;
   max-height: 100%;
-  box-sizing: border-box; }
+  box-sizing: border-box; 
+  font-size: 1.2em; }
 
 /*********************************************
  * CONTROLS
