@@ -56,9 +56,10 @@ $$identity \oplus x = x$$
 
 Note:
 
-This is a nice pattern, but so what? Why do we care about it?
-The first, and somewhat less compelling reason, is that it can provide a very nice and familiar API.
-Just like you can say to a coworker "This is a factory"
+This is a nice pattern, but so what? Why do we care about it? The first is that
+it can provide a very nice and familiar API. Just like you can say to
+a coworker "This is a factory", you can say "this is a monoid", and they'll
+know you can combine it without worrying about order.
 
 
 # Java
@@ -84,6 +85,8 @@ class PlusMonoid implements Monoid<Integer> {
 <!-- .element: class="fragment" -->
 
 
+laundry time
+
 ```java
 static <M> fold(Monoid<M> monoid, Stream<M> objects) {
     return objects.reduce(
@@ -91,12 +94,27 @@ static <M> fold(Monoid<M> monoid, Stream<M> objects) {
         monoid::combine
     );
 }
+```
 
+```java
+// Can be more generic!
+static <M, F> fold(Monoid<M> m, Reducible<F<M>> objects) { ... }
+// ... But Java doesn't let us talk about generics of generics...
+```
+<!-- .element: class="fragment" -->
+
+
+# sum
+
+```java
 static Integer sum(Stream<Integer> numbers) {
     return fold(new PlusMonoid(), numbers);
 }
 ```
+<!-- .element: class="fragment" -->
 
+
+# product
 
 ```java
 class ProductMonoid implements Monoid<Integer> {
@@ -113,11 +131,12 @@ static Integer product(Stream<Integer> numbers) {
     return fold(new ProductMonoid(), numbers);
 }
 ```
+<!-- .element: class="fragment" -->
 
 
-# The Essence
+# Essence Of:
 
-# Of MapReduce
+# MapReduce
 
 
 ```java
@@ -163,3 +182,8 @@ This means that we get to choose the order of evaluation for how we combine the 
 
 *picture: binary tree operation*
 
+Note:
+
+The stuff on the left of this tree doesn't depend on the stuff on the right.
+It can be easily parallelized.
+So if we know we have a monoid, we can use that to significant performance benefit.

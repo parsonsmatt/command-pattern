@@ -214,7 +214,6 @@ Aside: If your intuition on 'morphism' is "isomorphic web apps," then I'm sorry 
 An isomorphism is when you have a pair of functions which can "round trip"
 
 
-
 *drawing: two sets, A and B*
 
 Note:
