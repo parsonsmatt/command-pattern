@@ -75,9 +75,7 @@ They have very fast insertion, membership checking, union, intersection, differe
 They are unordered.
 
 
-Example
-
-*picture: stream of requests*
+<!-- .slide: data-background="request-stream.png" -->
 
 Note:
 
@@ -98,23 +96,11 @@ Note:
 
 So it turns out sets are *really* useful as an abstract notion!
 You can build basically all of math on top of this idea of an unordered container of unique objects.
-
-
-*drawing: set of random things*
-
-Note:
-
-Sets can be totally random objects, like the set consisting of Brazil, my
-neighbor, three different cats, and a crayon.
-
-
-*drawing: set of numbers*
-
-Note:
-
 It's usually more useful to talk about sets that have some regular properties,
 that we can derive from some rule.
 
+
+$$\\{ n | n \in \mathbb{N}, even?(n) \\}$$
 
 ```haskell
 -- Haskell
@@ -125,7 +111,7 @@ evens = [ n | n <- [1..], even n ]
 ```python
 # Python
 
-evens = { n for n in itertools.count() if n % 2 == 0 }
+even = { n for n in range(0) if n % 2 == 0 }
 ```
 
 Note:
@@ -140,25 +126,23 @@ pretty great.
 It's actually pretty convenient to think about *types* like they were sets.
 
 
-*drawing: set of all numbers*
+# Set of all numbers:
+
+## $\mathbb{N} = \\{ 0, 1, 2, \dots n, n + 1 \dots \\}$
 
 Note:
 
 Like the set of all numbers, or the set of all characters,
 
 
-*drawing: set of all characters*
+# Set of all characters:
 
-
-*drawing: set of all strings*
+## $$\mathbb{C} = \\{a, b, c, d, e, f, g, h, i, j, k, l, m, n\\}$$
 
 Note:
 
-Or the set of all strings, which is really a special case of the set of all
-lists
-
-
-*drawing: set of all lists*
+When talking about sets like these, we're kind of talking about types, like in
+the type signatures for our functions.
 
 
 # Functions
@@ -170,14 +154,7 @@ A function is something that *maps* an element from a set onto another element,
 potentially in the same set, but maybe in a different one.
 
 
-*drawing: set braces*
-
-Note:
-
-So we're going to get a little abstract now. This is our set notation.
-
-
-*drawing: set 'A' with objects*
+<!-- .slide: data-background="set-a.jpg" -->
 
 Note:
 
@@ -186,15 +163,15 @@ That's all we know about them.
 We're going to call the set 'A'.
 
 
-*drawing: set + endomorphism*
+<!-- .slide: data-background="set-a-endo.jpg" -->
 
 Note:
 
-So now we have this arrow -- we'll call it 'f' -- that takes an object in A and maps it to another object in A.
+So now we have these arrows -- we'll call them 'f' and 'g' -- that take an object in A and map it to another object in A.
 For some arrow to be a function, it has to always map the same start point to the same end point.
 
 
-*drawing: set + two endomorphisms*
+<!-- .slide: data-background="set-a-endo-2.jpg" -->
 
 Note:
 
@@ -210,18 +187,19 @@ Note:
 
 So, this idea of an arrow or function is also referred to as a "morphism."
 And if we have a function that maps objects from a set back to the same set, then we call that an "endomorphism."
-Aside: If your intuition on 'morphism' is "isomorphic web apps," then I'm sorry but you've been led astray.
-An isomorphism is when you have a pair of functions which can "round trip"
 
 
-*drawing: two sets, A and B*
+<!-- .slide: data-background="two-sets-a-b.jpg" -->
 
 Note:
 
 So this is a pair of sets, we'll call A and B.
 
 
-*drawing: sets + function mapping from a to b*
+# Morphism
+
+
+<!-- .slide: data-background="two-sets-arrow.jpg" -->
 
 Note:
 

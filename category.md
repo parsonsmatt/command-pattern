@@ -3,7 +3,7 @@
 Like a more general set!
 
 
-*picture: category w/ objects*
+<!-- .slide: data-background-size="contain" data-background="category-1.jpg" -->
 
 Note:
 
@@ -12,7 +12,7 @@ allow random membership in the category -- and, in fact, we usually can't talk
 much about the objects at all!
 
 
-*picture: category w/ objects and arrows*
+<!-- .slide: data-background-size="contain" data-background="category-2.jpg" -->
 
 Note:
 
@@ -22,12 +22,15 @@ in a category always map objects in the category to objects in the same
 category.
 
 
+<!-- .slide: data-background-size="contain" data-background="category-3.jpg" -->
+
+
 # law and order
 
 To establish a category:
 
 
-*picture: identity, self loop*
+<!-- .slide: data-background-size="contain" data-background="category-2.jpg" -->
 
 Note:
 
@@ -36,7 +39,7 @@ points back to itself. Remember, we get to pick whatever we want the arrows to
 be.
 
 
-*picture: composed arrows*
+<!-- .slide: data-background-size="contain" data-background="category-4.jpg" -->
 
 Note:
 
@@ -44,7 +47,7 @@ If we've got an arrow from A to B, and an arrow from B to C, then we get an
 implicit *composed* arrow from A to C. 
 
 
-*picture: composed arrows must be equal to regular*
+<!-- .slide: data-background-size="contain" data-background="category-5.jpg" -->
 
 Note:
 
@@ -67,14 +70,6 @@ It lacks the ability to talk about generic types that are parameterized on
 another generic type.
 
 
-# Showoff
-
-Note:
-
-To show that something is a category, we have to provide the thing satisfying
-identity and the thing satisfying composition.
-
-
 # Functions
 
 Identity:
@@ -85,19 +80,24 @@ type Function a b = a -> b
 identity :: Function a a
 identity a = a
 
-compose  :: Function b c -> Function a b -> Function a c
+compose  :: Function b c 
+         -> Function a b 
+         -> Function a c
 compose f g = \x -> f (g x)
 
-(.)      :: Function b c -> Function a b -> Function a c
 f . g = \x -> f (g x)
 ```
+
+Note:
+
+To show that something is a category, we have to provide the thing satisfying
+identity and the thing satisfying composition.
 
 
 ```haskell
 length      :: String -> Int
 addOne      :: Int -> Int
 replicate   :: a -> Int -> [a]
-begin       :: String
 
 wat :: String -> [Int]
 wat = replicate 3 . addOne . length
@@ -142,10 +142,10 @@ So the function `stream_identity` takes a generator and returns a generator.
 # Composition
 
 ```python
-def compose(processor_1, processor_2):
+def compose(proc_1, proc_2):
 
     def go(stream):
-        for x in processor_1(processor_2(stream)):
+        for x in proc_1(proc_2(stream)):
             yield x
 
     return go
@@ -235,6 +235,7 @@ Host: ...
 ...
 ```
 
+
 ```haskell
 # Response:
 
@@ -247,7 +248,6 @@ Content-Type: text/text
 Connection: Closed
 123
 ```
-<!-- .element: class="fragment" -->
 
 Note:
 
@@ -259,7 +259,7 @@ So the identity endpoint is just like an echo. It returns whatever you send it.
 blah http requests are boring
 
 
-*picture: lots of round trips*
+<!-- .slide: data-background-size="contain" data-background="round-trip.png" -->
 
 Note:
 
