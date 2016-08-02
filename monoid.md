@@ -176,6 +176,7 @@ Note:
 
 Implementing sum via the monoid is pretty easy.
 
+
 # Essence Of:
 
 # MapReduce

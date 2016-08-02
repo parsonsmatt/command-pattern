@@ -154,7 +154,7 @@ A function is something that *maps* an element from a set onto another element,
 potentially in the same set, but maybe in a different one.
 
 
-<!-- .slide: data-background="set-a.jpg" -->
+<!-- .slide: data-background="set-a-endo.jpg" -->
 
 Note:
 
@@ -162,16 +162,11 @@ And now we've got these objects that live in the set.
 That's all we know about them.
 We're going to call the set 'A'.
 
-
-<!-- .slide: data-background="set-a-endo.jpg" -->
-
-Note:
-
 So now we have these arrows -- we'll call them 'f' and 'g' -- that take an object in A and map it to another object in A.
 For some arrow to be a function, it has to always map the same start point to the same end point.
 
 
-<!-- .slide: data-background="set-a-endo-2.jpg" -->
+<!-- .slide: data-background="set-a.jpg" -->
 
 Note:
 

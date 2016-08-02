@@ -40,10 +40,6 @@ Note:
 I'm going to talk about stuff that common languages might not be able to
 implement as first class language features.
 
-Where it makes the examples easier to understand, I'm going to assume language
-features that don't exist, like standalone implementation of interfaces and
-abstractions of generics.
-
 
 ## "The choice of programming language is important because it influences one's point of view. 
 
