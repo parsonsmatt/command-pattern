@@ -1,53 +1,84 @@
-# Design Patterns
+# I command you
 
-## From Abstract Math
-
-
-<!-- .slide: data-background="design-patterns-cover.jpg" -->
+## to be Free!
 
 Note:
 
-Design pattern is a term popularized by the Gang of Four book containing a
-whole bunch of different software design elements that they recognized while
-working on big enterprise software. Examples include:
+Hi! I'm Matt Parsons, and I'd like to talk to you about some cool software practices I've been using recently to make better software.
 
 
-<!-- .slide: data-background="factory-pattern.gif" -->
+# Better?
 
-Note:
-
-The factory pattern, where you restrict instantiation of objects so you can have more control over their creation.
-
-
-<!-- .slide: data-background="visitor-pattern.jpg" -->
-
-Note:
-
-The visitor pattern, which allows you to consolidate the logic around traversing multiple similar cases.
-
-
-<!-- .slide: data-background="command-pattern.gif" -->
+* Performance?
+<!-- .element: class="fragment" -->
+* Correctness?
+<!-- .element: class="fragment" -->
+* Ease of understanding?
+<!-- .element: class="fragment" -->
+* Ease of reuse?
+<!-- .element: class="fragment" -->
+* Easy to test?
+<!-- .element: class="fragment" -->
+* Easy to modify?
+<!-- .element: class="fragment" -->
 
 Note:
 
-The command pattern, where you separate the logic behind deciding what actions to do and executing those actions.
+Of course, better is subjective. Faster code is better, but performance isn't
+free -- you have to spend time implementing it.  Code that gives the right
+answer is important, but sometimes a probabilistic answer is good enough.
+
+For more subjective measures, ease of understanding and reading are important.
+They're also extremely subjective. I'm going to have no issue understanding
+Haskell code, and may trip up with complex Java hierarchies or JavaScript
+scoping rules. 
+
+Ease of reuse is a little easier to understand. How hard is it to repurpose
+this code for other related tasks? This is difficult to know without actually
+reusing the code, which may be too late to understand how good the code
+actually is.
+
+Testability -- this is a really good metric for good code!
 
 
-<!-- .slide: data-background="java-beans.jpg" -->
+# Test Driven Design
 
-Note:
+## aka
+<!-- .element: class="fragment" -->
 
-I'm going to talk about stuff that common languages might not be able to
-implement as first class language features.
+### If it sucks to test,
+<!-- .element: class="fragment" -->
 
-
-## "The choice of programming language is important because it influences one's point of view. 
-
-### Our patterns assume Smalltalk and C++ level language features, and that choice determines what can and cannot be implemented easily. 
+### it sucks
 <!-- .element: class="fragment" -->
 
 
-### If we assumed procedural languages, we might have included design patterns called "Inheritance," "Encapsulation," and "Polymorphism." 
+# Test Driven Design
 
-## Similarly, some of our patterns are supported directly by the less common object-oriented languages."
-<!-- .element: class="fragment" -->
+* Informs API/library design
+* Immediate feedback on code reusability
+* Free regression/unit testing
+
+Note:
+
+Writing tests first is a great proxy for writing good code. Having "tests" to
+cover correctness and find bugs is just about a nice side effect. You get
+immediate feedback on your library design. If it sucks to write tests for your
+code, it sucks to use your code.
+
+
+# TDD is hard!
+
+Note:
+
+Writing test-first is *really* difficult. This is partially because writing
+"better" code is really difficult.
+
+
+# This isn't a TDD talk
+
+Note:
+
+I don't care about TDD. Testability is a nice *proxy* for "good" code. Code
+that's easy to test tends to be easy to modify, update, reuse, and verify. You
+don't have to write tests to write good code.
