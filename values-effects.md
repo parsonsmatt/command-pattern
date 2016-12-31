@@ -30,9 +30,8 @@ talk about a function in terms of the values and effects that it has.
 class Foo
   def my_func(x, y)          # value!
     z = User.all.length
-    result = x + y + z
     FooResult.insert x, y, z
-    return result            # value!
+    x + y + z                # value!
   end
 end
 ```
@@ -53,9 +52,8 @@ value.
 class Foo
   def my_func(x, y)
     z = User.all.length       # effect!
-    result = x + y + z
     FooResult.insert x, y, z  # effect!
-    return result
+    x + y + z
   end
 end
 ```
@@ -115,23 +113,18 @@ pass in some input values, and make assertions about the output value. This
 test is pretty silly, but it's easy to come up with more advanced test cases.
 
 
-# Testing Values:
-
 ```ruby
 describe "Add" do
   it "is commutative" do
     100.times do
-      x = Random::rand
-      y = Random::rand
+      x, y = 2.times { Random::rand }
       expect(x + y).to eq(y + x)
     end
   end
 
   it "is associative" do
     100.times do
-      x = Random::rand
-      y = Random::rand
-      z = Random::rand
+      x, y, z = 3.times { Random::rand }
       expect((x + y) + z).to eq(x + (y + z))
     end
   end
@@ -197,6 +190,7 @@ controversial in the OOP community. They're not a clear best practice.
 
 # Dependency Injection?
 
+
 ```ruby
 class Foo
   attr_reader :user, :foo_result
@@ -220,8 +214,6 @@ Note:
 Dependency injection can be used to make testing like this a little easier,
 especially in languages that aren't as flexible as Ruby. Instead of overriding a global name, you make the class depend on a parameter that's local. Instead of referring to the global User class, we're referring to the instance variable user which is ostensibly the same thing. This is Good, as we've reduced the coupling in our code, but we've introduced some significant extra complexity. And the testing story isn't great, either:
 
-
-# Dependency Injection...
 
 ```ruby
 describe "Foo" do
