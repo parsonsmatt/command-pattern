@@ -2,6 +2,8 @@
 
 ## is My Command
 
+http://www.parsonsmatt.org/command-pattern
+
 Note:
 
 Hi! I'm Matt Parsons, and I'd like to talk to you about some cool software practices I've been using recently to make better software.
