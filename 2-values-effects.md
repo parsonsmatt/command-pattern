@@ -69,7 +69,8 @@ and inserting a new result into the database.
 
 # Values and Effects
 
-*TODO: drawing of box with input/outputs*
+
+![](box.png)
 
 Note:
 
@@ -173,7 +174,8 @@ describe "Foo" do
     allow(FooResult)
       .to receive(:insert).with(x, y, z)
 
-    expect(Foo.new.my_func(x, y)).to eq(x + y + z)
+    expect(Foo.new.my_func(x, y))
+      .to eq(x + y + z)
   end
 end
 ```
@@ -302,15 +304,17 @@ technique which makes code much more flexible.
 
 
 ```ruby
-def my_func(x, y, z, foo_result)
+def my_func(x, y, users, foo_result)
+  z = users.call.length
   foo_result.call(x, y, z)
   x + y + z
 end
 
 it "my_func" do
   called = false
-  f = -> (_, _, _) { called = true }
-  expect(my_func(x, y, f)).to eq(6)
+  f = -> { [1, 2, 3] }
+  g = -> (_, _, _) { called = true }
+  expect(my_func(x, y, f, g)).to eq(6)
   expect(called).to be_true
 end
 ```
@@ -323,13 +327,15 @@ result of calling `foo_result` and the actual return value.
 
 
 ```ruby
-def my_func(x, y, z, foo_result)
+def my_func(x, y, users, foo_result)
+z = users.call.length
   x + y + z, foo_result.call(x, y, z)
 end
 
 it "my_func" do
-  f = -> (_, _, _) { true }
-  expect(my_func(x, y, f)).to eq([6, true])
+  f = -> { [1,2,3] }
+  g = -> (_, _, _) { true }
+  expect(my_func(x, y, f, g)).to eq([6, true])
 end
 ```
 
@@ -393,21 +399,3 @@ If the count is less than 15, we raise an exception.
 Otherwise, we return the count and print a joyous message.
 The `with_database` function is handling the resources for us, so we can't
 forget to close or misuse the connection.
-
-
-```haskell
-withDatabase :: String -> (Conn -> IO a) -> IO a
-withDatabase info = 
-    bracket (newConnection info) closeConnection
-
-doWork :: IO Int
-doWork =
-  withDatabase "connectpls" (\conn -> do
-    count <- execute conn 
-      "SELECT count(*) FROM users"
-    when (count < 15) 
-      (throwIO UnpopularAppException)
-    putStrLn "hooray we made it"
-    pure count
-  )
-```
