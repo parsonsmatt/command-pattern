@@ -1,6 +1,6 @@
-# I command you
+# Your Wish
 
-## to be Free!
+## is My Command
 
 Note:
 
