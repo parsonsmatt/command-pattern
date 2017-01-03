@@ -152,14 +152,9 @@ class Foo
 end
 ```
 
-ugh
-
 Note:
 
 Testing effects is a lot harder. Suddenly we have to worry about what User is, and what happens when we do FooResult.
-
-
-# Testing Effects:
 
 
 ```ruby
