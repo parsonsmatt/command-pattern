@@ -52,9 +52,9 @@ class CancelOrSubscribe
   def run(command)
     case command
     when Subscribe
-      StripeSubscribe.run(command)
+      StripeSubscribe.new.run(command)
     when Cancel
-      StripeCancel.run(command)
+      StripeCancel.new.run(command)
     end
   end
 end
@@ -106,8 +106,7 @@ end
 Note:
 
 We can make this more generic by passing the specific canceller and subscriber
-in. This is sort of like dependency injection, but it's really just object
-composition.
+in. This is sort of like dependency injection or object composition.
 
 
 ```ruby
@@ -123,59 +122,6 @@ internal_manager = CancelOrSubscribe.new(
 Note:
 
 Now, it's pretty easy to construct interpreters for sets of commands.
-
-
-```ruby
-class ComposeCommand
-  attr_reader 
-    :left_class, :left, 
-    :right_class, :right
-
-  def initialize(
-    left_class, left, right_class, right
-    )
-    @left_class, @left = left_class, left
-    @right_class, @right = right_class, right
-  end
-
-  # ...
-```
-
-Note:
-
-We can make this *even more generic* by accepting the classes we're checking
-against as parameters.
-
-
-```ruby
-  # ...
-  def run(command)
-    case command
-    when left_class
-      left.run(command)
-    when right_class
-      right.run(command)
-    end
-  end
-end
-```
-
-Note:
-
-And as above we case on the command, compare to our classes, and select the one
-that matches.
-
-
-```ruby
-stripe_manager = ComposeCommand(
-  Cancel, StripeCanceller.new,
-  Subscribe, StripeSubscriber.new
-)
-```
-
-Note:
-
-This is a little unsatisfactory. We don't have a guarantee that we're doing exactly the right thing, and it's not clear how we compose more than two classes. Fortunately, we can easily just accept a hash of command classes to handlers!
 
 
 ```ruby

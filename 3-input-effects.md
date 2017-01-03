@@ -71,8 +71,8 @@ end
 describe Foo do
   it "uhh" do
     x, y, z = 1, 2, 3
-    allow(FooResult).to 
-      receive(:insert).with(x, y, z)
+    allow(FooResult)
+      .to receive(:insert).with(x, y, z)
     expect(Foo.new.my_func x, y, z).to eq 6
   end
 end

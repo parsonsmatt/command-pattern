@@ -20,7 +20,7 @@ operate on it.
 Note:
 
 Let's talk about how we *use* methods and functions. Generally, we can talk
-about a function in terms of the values and effects that it has. We can also
+about a function in terms of the inputs and outputs that it has. We can also
 talk about a function in terms of the values and effects that it has.
 
 
@@ -52,7 +52,7 @@ value.
 class Foo
   def my_func(x, y)
     z = User.all.length       # effect!
-    FooResult.insert(x, y, z)  # effect!
+    FooResult.insert(x, y, z) # effect!
     x + y + z
   end
 end
@@ -145,8 +145,8 @@ almost. And they're kinda pretty!
 ```ruby
 class Foo
   def my_func(x, y)
-    z = User.all.length        # effect!
-    FooResult.insert(x, y, z)  # effect!
+    z = User.all.length       # effect!
+    FooResult.insert(x, y, z) # effect!
     x + y + z
   end
 end
@@ -207,7 +207,7 @@ class Foo
   def my_func(x, y)
     z = user.all.length        # effect!
     result = x + y + z
-    foo_result.insert(x, y, z)  # effect!
+    foo_result.insert(x, y, z) # effect!
     result
   end
 end
@@ -290,112 +290,3 @@ The more volatile these parameters are, the more difficult they are to deal
 with. If the `user` and `foo_result` inputs never change, then it's ezpz. If
 they ever do change, though, then understanding `my_func` becomes a lot more
 difficult.
-
-
-# Dependency Injection,
-
-## Functionally
-
-Note:
-
-As a last aside, you can do dependency injection by passing in
-functions/methods directly to the method you're calling. This is a powerful
-technique which makes code much more flexible.
-
-
-```ruby
-def my_func(x, y, users, foo_result)
-  z = users.call.length
-  foo_result.call(x, y, z)
-  x + y + z
-end
-
-it "my_func" do
-  called = false
-  f = -> { [1, 2, 3] }
-  g = -> (_, _, _) { called = true }
-  expect(my_func(x, y, f, g)).to eq(6)
-  expect(called).to be_true
-end
-```
-
-Note:
-
-There's still an effect in this code. We're non-locally modifying a reference.
-Which is kind of gross. We can get around that by returning two values: the
-result of calling `foo_result` and the actual return value.
-
-
-```ruby
-def my_func(x, y, users, foo_result)
-z = users.call.length
-  x + y + z, foo_result.call(x, y, z)
-end
-
-it "my_func" do
-  f = -> { [1,2,3] }
-  g = -> (_, _, _) { true }
-  expect(my_func(x, y, f, g)).to eq([6, true])
-end
-```
-
-Note:
-
-We're back to two easy tests. Our function just returns true that it is called,
-and we test value equality. Nice!
-
-
-# Aside:
-
-## Resource Management
-
-Note:
-
-This pattern is also *great* for automatic resource management. 
-
-
-```ruby
-def with_database(connection_info, callback)
-  result = nil
-
-  begin
-    connection = Connection.new connection_info
-    result = callback.call connection
-  ensure
-    connection.close 
-  end
-
-  result
-end
-```
-
-Note:
-
-This function accepts the database connection information and a function that
-uses the database connection, finally returning a value of some generic type
-`A`. The closing of the connection is handled by this function, so that we
-can't leak any resources.
-
-
-```ruby
-def do_work
-  with_database("connectpls", -> (conn) do
-    count = conn.execute "
-      SELECT count(*) FROM users
-    " 
-
-    raise UnpopularAppException if count < 15
-
-    puts "hooray we made it"
-    count
-  end)
-end
-```
-
-Note:
-
-So we open a database connection and execute the count query.
-If the count is less than 15, we raise an exception.
-Otherwise, we return the count and print a joyous message.
-The `with_database` function is handling the resources for us, so we can't
-forget to close or misuse the connection.

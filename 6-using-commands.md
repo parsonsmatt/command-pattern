@@ -17,7 +17,7 @@ class Foo
   end
 end
 
-value, action = Foo.lawl(1,2,3)
+value, action = Foo.new.lawl(1,2,3)
 action.run
 # or,
 InsertFooResultInterpreter.new.run(action)
@@ -85,9 +85,10 @@ Note:
 
 With the built in class, you can vary behavior with inheritance. In this
 example, we're subclassing the Subscribe class we created above and overriding
-the `run` method. However, now our calling code has to issue this
-`OtherSubscribe` method, which is intermixing our concerns.
+the `run` method. However, now our command-issuing code needs to have a Command Factory passed in, which is a little more complexity than I feel like having.
 
+If the choice is Command + Interpreter or Command + Factory + Inheritance +
+Dependency Injection, then I prefer the former.
 
 # Coupling :(
 

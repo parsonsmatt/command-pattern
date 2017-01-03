@@ -201,13 +201,13 @@ Let's look at how this is with a single charge.
 def charge_or_email(user, subscription)
   UserBalance.new(user, -> (balance) do
     if balance >= subscription.price
-      Charge.new(user, subscription.price, -> do
-        Return.new(user) 
+      Charge.new(user, subscription.price, -> _ do
+        Return.new nil
       end)
     else
       SendBalanceNotice.new(
-        user, subscription, -> do
-          Return.new(user) 
+        user, subscription, -> _ do
+          Return.new nil
         end
       )
     end
@@ -275,7 +275,7 @@ command, we just check that hash map.
 class ChargeStripe
   def run(command)
     command.user.charge!(command.subscription.price)
-    command.and_then.call
+    command.and_then.call(nil)
   end
 end
 ```
@@ -397,12 +397,12 @@ There's one last piece of the puzzle. We need a way to compose two command trees
 def charge_or_email(user, subscription)
   UserBalance.new(user, -> (balance) do
     if balance >= subscription.price
-      Charge.new(user, subscription.price, -> do
+      Charge.new(user, subscription.price, -> _ do
         Return.new(user) 
       end)
     else
       SendBalanceNotice.new(
-        user, subscription, -> do
+        user, subscription, -> _ do
           Return.new(user) 
         end
       )
@@ -440,6 +440,7 @@ def Interpreter
 
   def bind(next)
     @binds << next
+    self
   end
 
   # ...
@@ -477,7 +478,7 @@ We want to identify the Returns, or ends, in our current command structure. If w
 ```
 def charge_user(user, subscriptions)
   interpreter = Interpreter.new
-  user.subscriptions.each do |subscription|
+  user.subscriptions.each do |subs|
     interpreter.bind -> {
       UserBalance.new user, -> (balance) {
         if balance >= subs.price
@@ -503,16 +504,20 @@ The syntax is a little ugly. Let's write some helpers that clean it up.
 
 
 ```ruby
+nothing = -> _ { Return.new nil }
+
 def charge(user, amount)
-  Charge.new(user, amount, Return.new nil)
+  Charge.new(user, amount, nothing)
 end
 
 def send_balance_notice(user, subscription)
-  SendBalanceNotice.new(user, sbscription, Return.new nil)
+  SendBalanceNotice.new(
+    user, subscription, nothing
+  )
 end
 
 def user_balance(user)
-  UserBalance.new(user, Return.new nil)
+  UserBalance.new(user, nothing)
 end
 ```
 
@@ -521,44 +526,19 @@ Note:
 So these functions make up our "empty constructors." These trees just do one thing, and then they return nothing. 
 
 
-```ruby
-class Command
-  def bind(and_then)
-    old = @and_then
-    @and_then = -> { and_then.call(old.call) }
-  end
-end
-
-class UserBalance < Command
-  def bind(and_then)
-    old = @and_then
-    @and_then = -> (balance) do
-      and_then.call(old.call(balance))
-    end
-  end
-end
-```
-
-Note:
-
-We'll also add the following command on a now shared super class. So when we call `bind` on an individual command, it'll call the new bound function with the result of calling the old bound function. The default implementation just calls the new method with the result of the old method.
-
-For classes that have meaningful return values, like UserBalance, the new lambda needs to take that balance, pass it to the old method, and then pass the result of that into the new method.
-
-
-# Improved Syntax!
+## Improved Syntax!
 
 ```ruby
 def charge_user(user)
-  user.subscriptions.reduce(Return.new nil) 
+  user.subscriptions.reduce(Interpreter.new) 
     do |commands, subscription|
-    commands.bind -> do
-      user_balance(user).bind -> (balance) do
-        if balance >= subscription.price
-          charge(user, subscription.price)
-        else
-          send_balance_notice(user, subscription)
-        end
+    commands.bind -> _ do
+      user_balance(user)
+    end.bind -> (balance) do
+      if balance >= subscription.price
+        charge(user, subscription.price)
+      else
+        send_balance_notice(user, subscription)
       end
     end
   end
@@ -572,6 +552,23 @@ So this syntax is a good bit nicer. It's not as clean as the plain ol' imperativ
 The return of this is a data structure. It's a series of instructions that we can carry out and interpreter however we like.
 
 All we have to do is provide the right interpreters for each of the individual commands, and the code will glue and compose super nicely.
+
+
+```ruby
+def charge_user(user)
+  user
+    .subscriptions
+    .reduce(Interpreter.new) do |cmd, sub|
+      cmd.bind -> _ do
+        charge_or_email(user, sub)
+      end
+    end
+end
+```
+
+Note:
+
+Here's the same code that uses the function we defined earlier, demonstrating that it's pretty easy to compose code that uses this structure.
 
 
 # Intrigued?

@@ -50,7 +50,7 @@ But let's try it again with commands.
 
 
 ```ruby
-Cancel = Struct.new(:subscription)
+Cancel    = Struct.new(:subscription)
 Subscribe = Struct.new(:user, :product)
 
 def subscribe(user, plan)
@@ -63,7 +63,6 @@ def subscribe(user, plan)
   end
 
   result << Subscribe.new user, plan
-  result
 end
 ```
 
