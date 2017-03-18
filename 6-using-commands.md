@@ -4,78 +4,17 @@ Note:
 
 Now that we've got all these commands, how do we actually use them? There are
 a number of ways we can do this, in increasing complexity/power. As with most
-things in software development, it's best to use as little power as you need.
+things in software development, it's best to ask for as little power as you need.
 Shooting yourself in the foot hurts a lot less if you only have a water gun.
 
 
-# Single Command
+# Command Interpreter
 
 ```ruby
-class Foo
-  def lawl(x, y, z)
-    x + y + z, InsertFooResult.new(x, y, z)
-  end
-end
-
-value, action = Foo.new.lawl(1,2,3)
-action.run
-# or,
-InsertFooResultInterpreter.new.run(action)
-```
-
-Note:
-
-So, if you've got a single command, this is the easiest. You take that object
-and you pass it to the interpreter of your choice. Either one defined on the
-Command class itself, or on a separate interpreter class. They're really
-equivalent -- it's easier to use separate interpreters if you anticipate having
-multiple ways to interpret a given command, though you can use
-inheritance/subclassing to mimic that with the class.
-
-
-# Built In
-
-```ruby
-class Subscribe
-  attr_reader :user, :plan
-
-  def initialize(user, plan)
-    @user, @plan = user, plan
-  end
-
-  def run
-    Stripe::Subscription.create(user, plan)
-  end
-end
-```
-
-Note:
-
-The built in method allows us to keep all of the info in one place. This is
-good. But it limits how we're executing the effects.
-
-
-```ruby
-Subscribe = Struct.new(:user, :plan) do
-  def run
-    Stripe::Subscription.create(user, plan)
-  end
-end
-```
-
-Note:
-
-You can give structs methods, which is a nice shorthand. It makes it a little
-more concise and easy to read. However, you can't really subclass these, and
-you don't get an error if you don't pass all the parameters. So you may end up
-growing out of the struct style.
-
-
-```ruby
-class OtherSubscribe < Subscribe
-  def run
-    InternalBilling.create_subscription(
-      user, plan
+class FooResultInterpreter
+  def call(command)
+    FooResult.insert(
+      command.x, command.y, command.z
     )
   end
 end
@@ -83,36 +22,39 @@ end
 
 Note:
 
-With the built in class, you can vary behavior with inheritance. In this
-example, we're subclassing the Subscribe class we created above and overriding
-the `run` method. However, now our command-issuing code needs to have a Command Factory passed in, which is a little more complexity than I feel like having.
-
-If the choice is Command + Interpreter or Command + Factory + Inheritance +
-Dependency Injection, then I prefer the former.
-
-# Coupling :(
+For each command, you implement an interpreter. Here's a basic interpreter for the FooResult class.
 
 
-# Separate
+# Single Command
+
+```ruby
+value, action = Foo.new.my_func(1,2,3)
+
+InsertFooResultInterpreter.new.call(action)
+# or,
+TestInsertFooResultInterpreter.new.call(action)
+# or,
+RedisFooResult.new.call(action)
+```
+
+Note:
+
+So, if you've got a single command, this is the easiest. You take that object
+and you pass it to the interpreter of your choice. You can easily define many
+different varieties of interpreters for a given command.
+
 
 ```ruby
 class StripeSubscriber
-  def run(command)
+  def call(command)
     Stripe::Subscription.create(
       command.user, command.plan
     ) 
   end
 end
-```
 
-Note:
-
-With a separate runner class, we can easily define alternative interpretations.
-
-
-```ruby
 class InternalSubscriber
-  def run(command)
+  def call(command)
     InternalBilling.create_subscription(
       command.user, command.plan
     )
@@ -145,6 +87,8 @@ commands = [
 ]
 
 # answer?
+# wat do
+# halp
 ```
 
 Note:
@@ -161,34 +105,66 @@ commands = [
   Subscribe.new(b, c)
 ]
 
-commands.each do |command| 
-  interpreter.run command
+commands.map do |command| 
+  interpreter.call command
 end
 ```
 
 Note:
 
-We can simply iterate over the commands, and for each command, run it through
-the interpreter. There's a downside to this, though. If there's a significant
-return value of the command, then it's lost. We can retain those return values
-by using map instead.
+We can simply iterate over the commands, and for each command, call it through
+the interpreter. 
+
+
+# Dumb Data
+
+Note:
+
+Commands are just dumb data. Since they're dumb data, we can easily stuff them
+in data structures are do interesting things to them. While the above example
+just used an array, you could easily have a lazy list of commands, or a binary
+stree, or a hash, or whatever.
+
+
+# Optimizing Commands
+
+Note:
+
+Since we have introduced a data layer between business logic and execution, we can easily optimize command sequences.
+
+
+# InsertFooResult
+
+```ruby
+commands = [
+  InsertFooResult.new(1, 2, 3),
+  InsertFooResult.new(4, 5, 6),
+  InsertFooResult.new(7, 8, 9)
+]
+
+commands.map { |cmd| interpreter.call cmd }
+```
+
+Note:
+
+Here's our naive logic. It *works*. But it's inefficient! We issue three SQL queries here, when we could save a tremendous amount of time by doing a bulk insert.
+
+Let's optimize this.
 
 
 ```ruby
-interpreter = StripeSubscriber.new
-commands = [
-  Subscribe.new(x, y), 
-  Subscribe.new(z, a),
-  Subscribe.new(b, c)
-]
+def optimize(commands)
+  inserts, rest = commands.partition do |command|
+    command === InsertFooResult
+  end
 
-commands.map do |command| 
-  interpreter.run command
+  rest.push(BulkInsert.new(inserts))
 end
 ```
 
 Note:
 
-So that's the next easiest case. We take our method which works on a single
-command, and then we map it over a collection of commands. Let's kick the
-difficulty up a notch. What if we have two different command types?
+Ok, so here we're going to partition the commands into two lists; the first is
+one where the command's class is an InsertFooResult. The second list is all of
+the other commands. We return the list of non-insert commands with a BulkInsert
+command appended to the end.

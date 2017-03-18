@@ -13,7 +13,18 @@ end
 
 Note:
 
-Ok, so let's look at our example again. We want to get rid of that input effect.
+Ok, so let's look at our example again. We want to get rid of that input effect
+so we can make the method easier to test.
+
+
+# three magic steps
+
+1. Identify input effects
+<!-- .element: class="fragment" -->
+2. Take result of input effect as a parameter
+<!-- .element: class="fragment" -->
+3. High five your coworkers
+<!-- .element: class="fragment" -->
 
 
 ```ruby
@@ -73,7 +84,7 @@ describe Foo do
     x, y, z = 1, 2, 3
     allow(FooResult)
       .to receive(:insert).with(x, y, z)
-    expect(Foo.new.my_func x, y, z).to eq 6
+    expect(Foo.new.my_func(x, y, z)).to eq 6
   end
 end
 ```

@@ -12,19 +12,18 @@ end
 
 Note:
 
-So we've covered input effects and how we can push them out of methods.
-Output effects, unfortunately, aren't as easy to deal with.
-We'll follow a similar strategy.
-It's obvious how to convert an input effect into an input value.
-It's less obvious how to convert an output effect into an output values.
+So we've covered input effects and how we can push them out of methods. Output
+effects, unfortunately, aren't as easy to deal with. We'll follow a similar
+strategy. It's obvious how to convert an input effect into an input value. It's
+less obvious how to convert an output effect into an output values.
 
 
 # The Command Pattern
 
 Note:
 
-So the command pattern is a nice and convenient way to convert output effects into return values.
-Let's refactor the above code to use a Command.
+So the command pattern is a nice and convenient way to convert output effects
+into return values. Let's refactor the above code to use a Command.
 
 
 # A Command
@@ -32,7 +31,6 @@ Let's refactor the above code to use a Command.
 ```ruby
 class InsertFooResult
   attr_reader :x, :y, :z
-
   def initialize(x, y, z)
     @x = x
     @y = y
@@ -47,17 +45,19 @@ First, we need a way to encapsulate the arguments to the effect that we want to
 have. In this case, we can create a read-only class that just carries those
 values around.
 
+You want these to be values, because values are nice and easy. Making them a
+class tempts us to add extra functionality.
 
-# A Shorthand
+
+# A value command
 
 ```ruby
-InsertFooResult = Struct.new(:x, :y, :z)
+InsertFooResult = Value.new(:x, :y, :z)
 ```
 
 Note:
 
-Ruby structs are useful way to encapsulate this simple data in a lightweight
-manner.
+This is that values library I talked about previously. Highly recommended.
 
 
 # Using:
@@ -73,6 +73,8 @@ value, action = Foo.new.my_func(1, 2, 3)
 ```
 
 Note:
+
+Ok, so we're going to *return* the command value as one of the values returned from our method.
 
 Ruby lets us return two things in a method, which is pretty cool.
 It implicitly returns an array of stuff, which you can then destructure when you call the method.
@@ -116,7 +118,7 @@ class Foo {
 
 Note:
 
-All languages can mimic this sort of effect by returning a single composite value.
+All languages can mimic this feature by returning a single composite value.
 
 Now we can write a test for it:
 
@@ -124,7 +126,7 @@ Now we can write a test for it:
 # Testing
 
 ```ruby
-describe "Foo" do
+describe Foo do
   it "does the thing" do
     expect(Foo.new.my_func(2, 3, 4))
       .to eq(
@@ -139,38 +141,10 @@ end
 
 Note:
 
-We don't have to stub anything out.
-We're just comparing values to each other.
-This is super easy, basic, 2 + 2 level stuff.
+We don't have to stub anything out. We're just comparing values to each other.
+This is super easy, basic, 2 + 2 level stuff. Our output effect is now a simple
+value.
 
-
-# Doing commands
-
-* Separate interpreter class
-* An `interpret` method on the class itself
-
-Note:
-
-So, eventually you need to actually run your commands.
-From a pure "separation of concerns" standpoint, I like having a separate class that interprets the effects.
-You can also have an `interpret` method on the command class itself.
-
-
-```ruby
-class InsertFooResult
-  def interpret
-    FooResult.insert(x, y, z)
-  end
-end
-```
-
-
-```ruby
-class InsertFooResultInterpreter
-  def interpret(command)
-    FooResult.insert(
-      command.x, command.y, command.z
-    )
-  end
-end
-```
+I personally find this *much* nicer to look at than the previous code. We can
+compare how much complexity we're invoking, and how much of that is difficult to
+achieve in other languages.

@@ -10,7 +10,8 @@ So, when we talk about "doing stuff" in computer programming, we have a bunch
 of different ways of organizing it. If you're writing in OOP, you'll start by
 making a class, and then defining some methods on it. In functional
 programming, you start by defining a data type and writing functions that
-operate on it.
+operate on it. In imperative languages, you define procedures that run a
+sequence of commands on the underlying machine.
 
 
 # Values and Effects
@@ -21,7 +22,7 @@ Note:
 
 Let's talk about how we *use* methods and functions. Generally, we can talk
 about a function in terms of the inputs and outputs that it has. We can also
-talk about a function in terms of the values and effects that it has.
+talk about a function in terms of the values and effects that it deals with.
 
 
 # Values
@@ -137,7 +138,12 @@ Note:
 Here, we're testing that add is associative and commutative. We're taking
 a random sample of values, and ensuring that we can reorder our operations and
 group them however we want. These tests are *easy* to write. They're fun,
-almost. And they're kinda pretty!
+almost. And they're kinda pretty! They look extremely close to the mathematical
+definitions of associativity and commutativity.
+
+This sounds trivial, but many difficult concepts in distributed systems involve
+guaranteeing properties like commutativity. Making these properties easy to test
+is important.
 
 
 # Testing Effects:
@@ -154,7 +160,53 @@ end
 
 Note:
 
-Testing effects is a lot harder. Suddenly we have to worry about what User is, and what happens when we do FooResult.
+Testing effects is a lot harder. Suddenly we have to worry about what User is,
+and what happens when we do FooResult. I'm going to evolve testing this example.
+
+
+# Wrong
+
+```ruby
+describe "Foo#my_func" do
+  it "adds inputs" do
+    expect(Foo.new.my_func(1,2)).to eq(3)
+  end
+end
+```
+
+Note:
+
+So this attempt is flat out wrong. However, on an uninitialized database with 0 users, it'll return the right answer. This is a *fragile* test, even though it may pass sometimes.
+
+
+# Slow
+
+```ruby
+describe "Foo#my_func" do
+  it "adds inputs" do
+    User.insert(name: "Matt", age: 28)
+    expect(User.all.length).to eq(1)
+    expect(Foo.new.my_func(1,2)).to eq(4)
+    x = FooResult.find_by(x: 1, y: 2, z: 1)
+    expect(x).to_not be_nil
+  end
+end
+```
+
+Note:
+
+So this isn't wrong anymore. However, the test relies on the database state, and
+has to do five SQL queries in order to verify the code. These tests are
+monstrously slow and will kill your TDD cycle, in addition to being fragile and
+annoying to write.
+
+
+# Stubs!
+
+Note:
+
+The next "level up" that often happens is to take advantage of stubs or mocks.
+Let's look at that real quick:
 
 
 ```ruby
@@ -164,7 +216,7 @@ describe "Foo" do
 
     expect(User)
       .to receive(:all)
-      .and_return((1..z).to_a)
+      .and_return([1,2,3])
 
     allow(FooResult)
       .to receive(:insert).with(x, y, z)
@@ -177,10 +229,10 @@ end
 
 Note:
 
-Here's our test. We need to stub out the User.all method to ensure it returns
-a value that suits our expectation. We also need to stub out the FooResult
-class and verify that it receives the arguments we expect. Finally, we can do
-some assertions on the actual values involved.
+This test is a lot nicer. We need to stub out the User.all method to ensure it
+returns a value that suits our expectation. We also need to stub out the
+FooResult class and verify that it receives the arguments we expect. Finally, we
+can do some assertions on the actual values involved.
 
 This kinda sucks! You can imagine extending this to more complex things, but it
 gets even uglier, pretty quickly. Furthermore, stubs and mocks are pretty
@@ -189,20 +241,24 @@ controversial in the OOP community. They're not a clear best practice.
 
 # Dependency Injection?
 
+Note:
+
+Dependency injection is usually heralded as the solution or improvement to just
+stubbing out random global names. You define an interface (or duck type) for
+what your objects need and pass them in your object initializer
+
 
 ```ruby
 class Foo
-  attr_reader :user, :foo_result
-
   def initialize(user, foo_result)
     @user = user
     @foo_result = foo_result
   end
 
   def my_func(x, y)
-    z = user.all.length        # effect!
+    z = @user.all.length        # effect!
     result = x + y + z
-    foo_result.insert(x, y, z) # effect!
+    @foo_result.insert(x, y, z) # effect!
     result
   end
 end
@@ -211,7 +267,12 @@ end
 Note:
 
 Dependency injection can be used to make testing like this a little easier,
-especially in languages that aren't as flexible as Ruby. Instead of overriding a global name, you make the class depend on a parameter that's local. Instead of referring to the global User class, we're referring to the instance variable user which is ostensibly the same thing. This is Good, as we've reduced the coupling in our code, but we've introduced some significant extra complexity. And the testing story isn't great, either:
+especially in languages that aren't as flexible as Ruby. Instead of overriding a
+global name, you make the class depend on a parameter that's local. Instead of
+referring to the global User class, we're referring to the instance variable
+user which is ostensibly the same thing. This is Good, as we've reduced the
+coupling in our code, but we've introduced some significant extra complexity.
+And the testing story isn't great, either:
 
 
 ```ruby
@@ -235,22 +296,23 @@ end
 
 Note:
 
-This is clearly worse than before. If we're going by the metric that easier to test code is better code, then this code *really* sucks. So dependency injection is clearly not the obvious solution to this problem.
+This is clearly worse than before. If we're going by the metric that easier to
+test code is better code, then this code *really* sucks. So dependency injection
+is clearly not the obvious solution to this problem.
 
-You can write helpers and stuff to obscure the difficulty of testing this.
-But that doesn't make it *better*, it just hides the badness.
-Sometimes that's great!
-Perfect is the enemy of good etc.
+You can write helpers and stuff to obscure the difficulty of testing this. But
+that doesn't make it *better*, it just hides the badness. Sometimes that's
+great! Perfect is the enemy of good etc.
 
 
 # Dependency Injection Is Still An Effect
 
 Note:
 
-Dependency injection feels like we're removing the effect.
-But we're not. We've just moved it slightly.
-`self` in Ruby or `this` in Java, JS, PHP, etc. are implicit parameters to object methods.
-This is something that Python illuminates.
+Dependency injection feels like we're removing the effect. But we're not. We've
+just moved it slightly. `self` in Ruby or `this` in Java, JS, PHP, etc. are
+implicit parameters to object methods. This is something that Python
+illuminates.
 
 
 ```python
@@ -285,3 +347,78 @@ The more volatile these parameters are, the more difficult they are to deal
 with. If the `user` and `foo_result` inputs never change, then it's ezpz. If
 they ever do change, though, then understanding `my_func` becomes a lot more
 difficult.
+
+In languages that can enforce that some members are final, then this is safer.
+In languages that don't support immutability, you have to use discipline
+instead.
+
+In all of the above examples, we had to make our code and tests *significantly*
+more complex. I want to make it simpler.
+
+
+# Values vs Objects
+
+Note:
+
+Are objects values? Not necessarily. Objects have a notion of identity that is
+separate from the values of their member variables. By default, objects in Ruby
+and most object oriented languages compare each other based on reference
+equality: these two objects are equal iff they refer to the same objet in
+memory. Two users, each with the same name and age, are different if they are
+stored in different places in memory.
+
+
+# Objects
+
+```ruby
+class User
+  attr_reader :name, :age
+  def initialize(name, age)
+    @name = name
+    @age = age
+  end
+end
+
+a = User.new("Matt", 28)
+b = User.new("Matt", 28)
+
+a == b # False!
+```
+
+Note:
+
+Here we've got a User class with name and age. We instantiate two users with the
+same values. THese are different objects, and equality checking returns false for them.
+
+
+# Values
+
+```ruby
+class User
+  # ...
+  def eql?(other)
+    name == other.name && age == other.age
+  end
+```
+
+Note:
+
+Values, on the other hand, are equal if every component of the value is equal. 5
+is equal to 5, regardless of where the two fives are stored in memory. This
+modification to the User class converts it into a value, where two users are now
+equal if their name and age are the same.
+
+
+# Values
+
+[https://github.com/tcrayford/Values](https://github.com/tcrayford/Values)
+
+```ruby
+User = Value.new(:user, :age)
+```
+
+Note:
+
+I'm going to refer to the `Values` library. The above code creates an immutable
+value object with two fields, user and age. Equality is done by comparing the
+members for equality
