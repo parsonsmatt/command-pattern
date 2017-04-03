@@ -1,6 +1,7 @@
 # Output Effects
 
 ```ruby
+# Ruby
 class Foo
   def my_func(x, y)
     z = User.all.length       
@@ -29,6 +30,7 @@ into return values. Let's refactor the above code to use a Command.
 # A Command
 
 ```ruby
+# Ruby
 class InsertFooResult
   attr_reader :x, :y, :z
   def initialize(x, y, z)
@@ -52,17 +54,26 @@ class tempts us to add extra functionality.
 # A value command
 
 ```ruby
+# Ruby
 InsertFooResult = Value.new(:x, :y, :z)
+```
+
+```haskell
+-- Haskell
+data InsertFooResult = InsertFooResult Int Int Int
+  deriving (Eq, Ord, Show)
 ```
 
 Note:
 
-This is that values library I talked about previously. Highly recommended.
+This is that values library I talked about previously. Highly recommended. It's
+even more concise than the Haskell!
 
 
 # Using:
 
 ```ruby
+# Ruby
 class Foo
   def my_func(x, y, z)
     x + y + z, InsertFooResult.new(x, y, z)
@@ -70,6 +81,11 @@ class Foo
 end
 
 value, action = Foo.new.my_func(1, 2, 3)
+```
+
+```haskell
+-- Haskell
+myFunc x y z = (x + y + z, InsertFooResult x y z)
 ```
 
 Note:
@@ -118,7 +134,9 @@ class Foo {
 
 Note:
 
-All languages can mimic this feature by returning a single composite value.
+All languages can mimic this feature by returning a single composite value, so
+don't fret if you're using Java or C# or PHP or whatever. Half of my dayjob is
+in PHP and I use these techniques there!
 
 Now we can write a test for it:
 
@@ -126,6 +144,7 @@ Now we can write a test for it:
 # Testing
 
 ```ruby
+# Ruby
 describe Foo do
   it "does the thing" do
     expect(Foo.new.my_func(2, 3, 4))
@@ -148,3 +167,17 @@ value.
 I personally find this *much* nicer to look at than the previous code. We can
 compare how much complexity we're invoking, and how much of that is difficult to
 achieve in other languages.
+
+
+```haskell
+describe "Foo" $ do
+  prop "does the thing" $ \x y z ->
+    myFunc x y z 
+      `shouldBe` 
+        (x + y + z, InsertFooResult x y z)
+    
+```
+
+Note:
+
+And here's the test in Haskell. Easy to express as a QuickCheck property, too!

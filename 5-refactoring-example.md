@@ -17,6 +17,7 @@ Here's a brief overview of the spec we've been given.
 
 
 ```ruby
+# Ruby
 def subscribe(user, plan)
   user.subscriptions.each do |subscription|
     if subscription.product == plan.product
@@ -30,39 +31,34 @@ end
 
 Note:
 
-This method takes a user and a plan that we want to subscribe them to.
-We're going to iterate over all the users current subscriptions and cancel anything on the same product.
-Then we finally subscribe them to that plan.
+This method takes a user and a plan that we want to subscribe them to.  We're
+going to iterate over all the users current subscriptions and cancel anything
+on the same product.  Then we finally subscribe them to that plan.
 
+This is the super imperative algorithm that requires stubs, mocks, etc. to
+test. So we need to refactor it to have fewer effects, so the test story is
+nicer!
 
-```ruby
-def subs_on_product(subscriptions, product)
-  subscriptions.filter do |subscription|
-    subscription.product == product
-  end
-end
-
-def subscribe(user, plan)
-  subs_on_product(
-    user.subscriptions, plan.product
-  ).each(&:cancel!)
+```haskell
+subcribe user plan = do
+  for_ (userSubscriptions user) $ \subscription ->
+    when (subProduct subscription == planProduct plan)
+         (Stripe.cancel subscription)
   
-  user.subscribe! plan
-end
+  Stripe.subscribe user plan
 ```
 
 Note:
 
-Ok, so commands are a heavier weight technique that don't work too well on tiny examples like this.
-For this bit of code, it's easy enough to factor out the values entirely.
-Now we have  a pure function in `subscriptions_to_cancel_for`, and our `subscribe` method is 100% effectful.
-The effects are isolated and that's great.
-But let's try it again with commands.
+So this is the same thing, but in Haskell. Haskell won't save you! You can
+write grossnasty code in Haskell, and it's only a little more inconvenenient
+than writing it in Ruby or PHP or whatever. 
 
 
 ```ruby
+# Ruby
 Cancel    = Value.new(:subscription)
-Subscribe = Value.new(:user, :product)
+Subscribe = Value.new(:user, :plan)
 
 def subscribe(user, plan)
   user.subscriptions.filter do |subscription|
@@ -81,11 +77,35 @@ the plans we want to cancel. We create a new Cancel command for each of these
 subscriptions. Finally, we push a new Subscribe command to the end of that list,
 subscribing them to the new plan.
 
+
+```haskell
+-- Haskell
+data SubscribeCommand
+  = Cancel Subscription
+  | Subscribe User Plan
+  deriving (Eq, Show)
+
+subscribe :: User -> Plan -> [SubscribeCommand]
+subscribe user plan = cancels user ++ [Subscribe user plan]
+  where
+    cancels = map Cancel 
+            . filter (\sub -> subProduct == product)
+            . userSubscriptions
+    product = planProduct plan
+```
+
+Note:
+
+Here's the same thing in Haskell! It's just a pure function that maps a user
+and plan to a list of commands to execute. This is a pure specification of our
+business logic.
+
 An interesting thing here is that we're returning an array of commands to execute.
 In any case, it's now really easy to set this up and write tests:
 
 
 ```ruby
+# Ruby
 describe "subscribe" do
   it "should subscribe to an empty user" do
     user, plan = 2.times { double() }
@@ -114,7 +134,41 @@ type that our method works with. Smaller duck types are easier to reuse and
 compose, so the less stubbing and test setup we have to do, the better.
 
 
+```haskell
+-- Haskell
+describe "Subscribe" $ do
+  it "should subscribe to an empty user" $ do
+    let user = fakeUser { userSubscriptions = [] }
+        plan = fakePlan { planProduct = "foo" }
+
+    subscribe user plan `shouldBe` [Subscribe user plan] 
+```
+
+Note:
+
+Here's that test in Haskell. It's basically the same thing, and a pretty clear
+declaration of our business logic. If we have arbitrary instances for our
+types, then we can do something similar:
+
+
+```haskell
+-- Haskell
+describe "subscribe" $ do
+  prop "should subscribe an empty user" $ \user plan -> do
+    let user' = user { userSubscriptions = [] }
+    subscribe user' plan `shouldBe` [Subscribe user' plan]
+    
+```
+
+Note:
+
+Since our commands and inputs are just dumb data, we can easily generate
+arbitrary ones to get confidence that we're doing the right thing, as well as
+ignoring stuff that's incidental to what we're working on.
+
+
 ```ruby
+# Ruby
 describe "subscribe" do
   it "cancels a related plan" do
     user, plan, old_sub = 3.times { double() }
@@ -135,7 +189,7 @@ end
 Note:
 
 We can easily write tests for more complex business logic too. Here we're
-verifying that our subscribe method cancels old plans on the same family.
+verifying that our subscribe method cancels old plans on the same product.
 
 
 # Discard Stubs, 
@@ -143,22 +197,26 @@ verifying that our subscribe method cancels old plans on the same family.
 # Acquire Values
 
 ```ruby
+# Ruby
 User         = Value.new(:subscriptions)
 Subscription = Value.new(:product)
-Plan         = Value.new(:product)
+Plan         = Value.new(:product, :amount)
 ```
 
 Note:
 
-OK, so if you're really anti-stubbing, then you hopefully are just using dumb value classes. If you do that, then you don't need to stub anything out at all. Here's our minimal data model.
+OK, so if you're really anti-stubbing, then you hopefully are just using dumb
+value classes. If you do that, then you don't need to stub anything out at all.
+Here's our minimal data model.
 
 
 ```ruby
+# Ruby
 describe "subscribe" do
   it "cancels a related plan" do
     sub  = Subscription.new("foo")
     user = User.new([sub])
-    plan = Plan.new("foo")
+    plan = Plan.new("foo", 123)
     
     commands = subscribe user, plan
     
@@ -189,6 +247,7 @@ random values and assert that they hold.
 
 
 ```ruby
+# Ruby
 describe "Add" do
   it "is commutative" do
     100.times do
@@ -219,6 +278,7 @@ So here are the property tests for adding two numbers. We can recover a more nat
 
 
 ```ruby
+# Ruby
 describe "subscribe" do
   it "always subscribes to given plan" do
     forall_users_and_plans do |user, plan|
@@ -237,6 +297,7 @@ that the generator makes sensible choices.
 
 
 ```ruby
+# Ruby
 describe "subscribe" do
   it "always cancels related plans" do
     forall_users_and_plans do |user, plan|
@@ -257,6 +318,7 @@ This property tests that we always cancel related plans.
 
 
 ```ruby
+# Ruby
 describe "subscribe" do
   it "doesn't cancel unrelated plans" do
     forall_users_and_plans do |user, plan|

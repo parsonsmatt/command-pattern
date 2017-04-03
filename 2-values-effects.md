@@ -24,6 +24,8 @@ Let's talk about how we *use* methods and functions. Generally, we can talk
 about a function in terms of the inputs and outputs that it has. We can also
 talk about a function in terms of the values and effects that it deals with.
 
+The code in this talk will be a combination of Ruby and Haskell.
+
 
 # Values
 
@@ -67,6 +69,24 @@ Note:
 The effects in this function are reading all of the users out of the database,
 and inserting a new result into the database.
 
+
+# Haskell
+
+```haskell
+module Foo where
+
+myFunc x y = do
+    z <- fmap length selectUsers
+    insert (FooResult x y z)
+    pure (x + y + z)
+```
+
+Note:
+
+Haskell's purity makes it really easy to figure out what's an effect and what's
+a value. In Ruby (or any other language, really) you have to either *know* or
+read the entire call graph of the code you're talking about. Haskell tracks it
+in the type, which makes these refactors really easy.
 
 # Values and Effects
 
@@ -146,6 +166,38 @@ guaranteeing properties like commutativity. Making these properties easy to test
 is important.
 
 
+# In Haskell, too!
+
+```haskell
+add x y = x + y
+
+spec = 
+  describe "add" $ do
+    it "should add numbers" $ do
+      add 2 3 `shouldBe` 5    
+    prop "is commutative" $ \x y -> do
+      add x y `shouldBe` add y x
+    prop "is associative" $ \x y z -> do
+      add x (add y z) `shouldBe` add (add x y) z
+```
+
+Note:
+
+The tests we have for the Ruby and Haskell are just about the same! It's a
+little easier to write the tests in HAskell, but we've got basically the same
+thing going on.
+
+
+# Testing Effects:
+
+Note:
+
+So you're going to read the code on these slides and you might wince. I'm gonna
+be calling out some methods of testing effects that we've all done
+(probably?!). So if you are feeling personally offended, just know that I've
+done all of these too, and maybe I can help find a way out!
+
+
 # Testing Effects:
 
 ```ruby
@@ -176,7 +228,25 @@ end
 
 Note:
 
-So this attempt is flat out wrong. However, on an uninitialized database with 0 users, it'll return the right answer. This is a *fragile* test, even though it may pass sometimes.
+So this attempt is flat out wrong. However, on an uninitialized database with 0
+users, it'll return the right answer. This is a *fragile* test, even though it
+may pass sometimes.
+
+
+# Wrong Haskell
+
+```haskell
+describe "Foo.myFunc" $ do
+  it "adds inputs" $ do
+    Foo.myFunc 1 2 `shouldReturn` 3
+```
+
+Note:
+
+Haskell isn't going to protect us here. While we know that we have effects
+going on in Foo.myFunc, that's all we know, and as long as we acknowledge that,
+then GHC is satisfied. Since the correctness of this depends on something that
+we are not tracking in the type, the type system can' help us!
 
 
 # Slow
@@ -239,6 +309,15 @@ gets even uglier, pretty quickly. Furthermore, stubs and mocks are pretty
 controversial in the OOP community. They're not a clear best practice.
 
 
+# Stubs in Haskell
+
+Note:
+
+So stubbing global terms like this in Haskell? It's not possible. Sorry, or
+not, I guess, depending on whether you find the previous code disgusting or
+pleasantly concise.
+
+
 # Dependency Injection?
 
 Note:
@@ -267,12 +346,12 @@ end
 Note:
 
 Dependency injection can be used to make testing like this a little easier,
-especially in languages that aren't as flexible as Ruby. Instead of overriding a
-global name, you make the class depend on a parameter that's local. Instead of
-referring to the global User class, we're referring to the instance variable
-user which is ostensibly the same thing. This is Good, as we've reduced the
-coupling in our code, but we've introduced some significant extra complexity.
-And the testing story isn't great, either:
+especially in languages that aren't as flexible as Ruby (like Haskell). Instead
+of overriding a global name, you make the class depend on a parameter that's
+local. Instead of referring to the global User class, we're referring to the
+instance variable user which is ostensibly the same thing. This is Good, as
+we've reduced the coupling in our code, but we've introduced some significant
+extra complexity.  And the testing story isn't great, either:
 
 
 ```ruby
@@ -305,55 +384,33 @@ that doesn't make it *better*, it just hides the badness. Sometimes that's
 great! Perfect is the enemy of good etc.
 
 
-# Dependency Injection Is Still An Effect
+# How to even do that in Haskell
 
 Note:
 
-Dependency injection feels like we're removing the effect. But we're not. We've
-just moved it slightly. `self` in Ruby or `this` in Java, JS, PHP, etc. are
-implicit parameters to object methods. This is something that Python
-illuminates.
+So how do we even do that in Haskell? Well, everything is just a function, so you just pass functions.
 
 
-```python
-# Python
-class Foo(object):
-    def __init__(self, user, foo_result):
-        self.user = user
-        self.foo_result = foo_result
+```haskell
+myFuncAbstract 
+    :: IO [a]               -- select users
+    -> (FooResult -> IO ()) -- insert FooResult
+    -> Int -> Int -> IO Int -- The rest of the function
+myFuncAbstract selectUsers insert x y = do
+    z <- fmap length selectUsers
+    insert (FooResult x y z)
+    pure (x + y + z)
 
-    def my_func(self, x, y):
-        z = self.user.all().length()
-        self.foo_result.insert(x, y, z)
-        return x + y + z
+myFunc = myFuncAbstract DB.selectUsers DB.insert
 ```
 
 Note:
 
-This is the Python code for our silly example. Where does `self` come from?
-Well, it's attached to the object. So two identical looking calls to `my_func`
-are going to return different results based on how the object was initialized.
+Here we make selectUsers and insert into functions that we pass in, and for the
+real version, we provide the database functions. The tested version can provide 
+different functions based on what you want to test.
 
-
-# Not
-
-### (obviously)
-
-# Bad
-
-Note:
-
-The more volatile these parameters are, the more difficult they are to deal
-with. If the `user` and `foo_result` inputs never change, then it's ezpz. If
-they ever do change, though, then understanding `my_func` becomes a lot more
-difficult.
-
-In languages that can enforce that some members are final, then this is safer.
-In languages that don't support immutability, you have to use discipline
-instead.
-
-In all of the above examples, we had to make our code and tests *significantly*
-more complex. I want to make it simpler.
+This is about as awkward as the OOP Version! Alas.
 
 
 # Values vs Objects
@@ -421,4 +478,4 @@ Note:
 
 I'm going to refer to the `Values` library. The above code creates an immutable
 value object with two fields, user and age. Equality is done by comparing the
-members for equality
+members for equality.

@@ -1,6 +1,6 @@
-# Your Wish
+# I Command You
 
-## is My Command
+## To Be Free!
 
 http://www.parsonsmatt.org/command-pattern
 
@@ -9,9 +9,7 @@ Note:
 Hi! I'm Matt Parsons, and I'd like to talk to you about some cool software
 practices I've been using recently to make better software.
 
-The code in these slides will be Ruby. When it's something else, there'll be a
-comment or note on the slide indicating the language. If you want to follow
-along, you can go to the above link.
+If you want to follow along with the slides, they're available at the URL above.
 
 
 # Better?
@@ -35,10 +33,10 @@ Of course, better is subjective. Faster code is better, but performance isn't
 free -- you have to spend time implementing it.  Code that gives the right
 answer is important, but sometimes "close enough" is good enough.
 
-Ease of understanding and reading are important. They're also extremely
-subjective. I'm personally have no issue understanding Haskell code, and may trip
-up with complex Java hierarchies or JavaScript scoping rules that are perfectly
-obvious and idiomatic for a familiar programmer.
+Ease of understanding is important and subjective. I personally have no issue 
+understanding Haskell code, and may trip up with complex Java hierarchies or
+JavaScript scoping rules that are perfectly obvious and idiomatic for a
+familiar programmer.
 
 Ease of reuse is a little easier to understand. How hard is it to repurpose
 this code for other related tasks? This is difficult to know without actually
@@ -98,4 +96,5 @@ Note:
 
 Code that's easy to test tends to be easy to modify, update, reuse, and verify.
 It is like a finger pointing at the moon of good software: don't look at the
-tests, look at the good software! You don't have to write tests to write good code.
+tests, look at the good software! You don't have to write tests to write good
+code, and just because you wrote tests doesn't mean your code is nice.
