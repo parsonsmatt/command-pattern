@@ -25,6 +25,19 @@ Note:
 For each command, you implement an interpreter. Here's a basic interpreter for the FooResult class.
 
 
+# Command Interpreter
+
+```haskell
+fooResultInterpreter :: InsertFooResult -> IO ()
+fooResultInterpreter (InsertFooResult x y z) = 
+   insert (FooResult x y z) 
+```
+
+Note:
+
+Command interpreters in Haskell are just functions which convert a *command value* into an action of some sort.
+
+
 # Single Command
 
 ```ruby

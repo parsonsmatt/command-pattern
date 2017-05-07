@@ -39,6 +39,7 @@ This is the super imperative algorithm that requires stubs, mocks, etc. to
 test. So we need to refactor it to have fewer effects, so the test story is
 nicer!
 
+
 ```haskell
 subcribe user plan = do
   for_ (userSubscriptions user) $ \subscription ->
@@ -51,7 +52,7 @@ subcribe user plan = do
 Note:
 
 So this is the same thing, but in Haskell. Haskell won't save you! You can
-write grossnasty code in Haskell, and it's only a little more inconvenenient
+write some pretty nasty code in Haskell, and it's only a little more inconvenenient
 than writing it in Ruby or PHP or whatever. 
 
 
@@ -89,7 +90,7 @@ subscribe :: User -> Plan -> [SubscribeCommand]
 subscribe user plan = cancels user ++ [Subscribe user plan]
   where
     cancels = map Cancel 
-            . filter (\sub -> subProduct == product)
+            . filter (\sub -> subProduct sub == product)
             . userSubscriptions
     product = planProduct plan
 ```
@@ -100,7 +101,7 @@ Here's the same thing in Haskell! It's just a pure function that maps a user
 and plan to a list of commands to execute. This is a pure specification of our
 business logic.
 
-An interesting thing here is that we're returning an array of commands to execute.
+An interesting thing here is that we're returning an array or list of commands to execute.
 In any case, it's now really easy to set this up and write tests:
 
 
@@ -157,7 +158,6 @@ describe "subscribe" $ do
   prop "should subscribe an empty user" $ \user plan -> do
     let user' = user { userSubscriptions = [] }
     subscribe user' plan `shouldBe` [Subscribe user' plan]
-    
 ```
 
 Note:
@@ -296,6 +296,19 @@ asserts that the commands *always* include a subscribe command. We'll assume
 that the generator makes sensible choices.
 
 
+```haskell
+describe "subscribe" $ do
+  prop "it always subscribes to a given plan" $ \user plan ->
+    subscribe user plan 
+      `shouldInclude`
+        Subscribe user plan
+```
+
+Note:
+
+The Haskell QuickCheck properties look pretty similar. While we don't have the same correctness guarantees in Ruby and Haskell, you can tell that we're getting pretty close.
+
+
 ```ruby
 # Ruby
 describe "subscribe" do
@@ -315,6 +328,24 @@ end
 Note:
 
 This property tests that we always cancel related plans.
+
+
+```haskell
+describe "subscribe" $ do
+  prop "it always cancels related plans" $ \user plan -> do
+    let cancellations = 
+          map Cancel 
+            . subsOnProduct (userSubscriptions user) 
+            $ planProduct plan
+
+    subscribe user plan
+      `shouldSatisfy`
+        \commands -> cancellations `isSubsetOf` commands
+```
+
+Note:
+
+And here we are in Haskell. This test works exactly the same logic as the above Ruby code.
 
 
 ```ruby
@@ -337,6 +368,25 @@ Note:
 
 Finally, we can test that we don't cancel any plans that aren't related to the one we're subscribing for.
 This technique is crazy powerful for verifying the correctness of our business logic.
+
+
+```haskell
+describe "subscribe" $ do
+  prop "doesn't cancel unrelated plans" $ \user plan -> do
+    let unrelatedCancels =
+          map Cancel
+            . subsNotOnProduct (userSubscriptions user)
+            $ planProduct plan
+
+    subscribe user plan 
+      `shouldSatisfy`
+        \commands -> all (`notElem` unrelatedCancels) commands
+```
+
+Note:
+
+I'm pretty pleased that our Ruby tests are about as good as our Haskell tests. 
+Where a lot of functional programming techniques feel awkward and clumsy when ported to object oriented languages, this technique seems to work really well for both.
 
 
 # Property Testing
