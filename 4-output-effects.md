@@ -60,7 +60,8 @@ InsertFooResult = Value.new(:x, :y, :z)
 
 ```haskell
 -- Haskell
-data InsertFooResult = InsertFooResult Int Int Int
+data InsertFooResult 
+  = InsertFooResult Int Int Int
   deriving (Eq, Ord, Show)
 ```
 
@@ -85,7 +86,8 @@ value, action = Foo.new.my_func(1, 2, 3)
 
 ```haskell
 -- Haskell
-myFunc x y z = (x + y + z, InsertFooResult x y z)
+myFunc x y z = 
+  (x + y + z, InsertFooResult x y z)
 ```
 
 Note:

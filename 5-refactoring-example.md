@@ -42,8 +42,8 @@ nicer!
 
 ```haskell
 subcribe user plan = do
-  for_ (userSubscriptions user) $ \subscription ->
-    when (subProduct subscription == planProduct plan)
+  for_ (userSubscriptions user) $ \sub ->
+    when (subProduct sub == planProduct plan)
          (Stripe.cancel subscription)
   
   Stripe.subscribe user plan
@@ -54,6 +54,15 @@ Note:
 So this is the same thing, but in Haskell. Haskell won't save you! You can
 write some pretty nasty code in Haskell, and it's only a little more inconvenenient
 than writing it in Ruby or PHP or whatever. 
+
+
+# Issue Commands
+
+## Get Money
+
+Note:
+
+Alright, so instead of that initial code, we're going to decouple the construction of our plan with the execution.
 
 
 ```ruby
@@ -82,34 +91,37 @@ subscribing them to the new plan.
 ```haskell
 -- Haskell
 data SubscribeCommand
-  = Cancel Subscription
-  | Subscribe User Plan
-  deriving (Eq, Show)
+    = Cancel Subscription
+    | Subscribe User Plan
+    deriving (Eq, Show)
 
 subscribe :: User -> Plan -> [SubscribeCommand]
-subscribe user plan = cancels user ++ [Subscribe user plan]
+subscribe user plan = 
+    cancels user ++ [Subscribe user plan]
   where
     cancels = map Cancel 
-            . filter (\sub -> subProduct sub == product)
+            . filter pred
             . userSubscriptions
+    pred sub = subProduct sub == product
     product = planProduct plan
 ```
 
 Note:
 
-Here's the same thing in Haskell! It's just a pure function that maps a user
-and plan to a list of commands to execute. This is a pure specification of our
-business logic.
+Here's the same thing in Haskell! We're defining a sum type for the various
+commands that'll come out of the function, and we return a list of them. It's
+just a pure function that maps a user and plan to a list of commands to
+execute. This is a pure specification of our business logic.
 
-An interesting thing here is that we're returning an array or list of commands to execute.
-In any case, it's now really easy to set this up and write tests:
+An interesting thing here is that we're returning an array or list of commands
+to execute.  In any case, it's now really easy to set this up and write tests:
 
 
 ```ruby
 # Ruby
 describe "subscribe" do
   it "should subscribe to an empty user" do
-    user, plan = 2.times { double() }
+    user, plan = double(), double()
     user.stub(:subscriptions) { [] }
     plan.stub(:product) { "foo" }
 
@@ -139,10 +151,13 @@ compose, so the less stubbing and test setup we have to do, the better.
 -- Haskell
 describe "Subscribe" $ do
   it "should subscribe to an empty user" $ do
-    let user = fakeUser { userSubscriptions = [] }
-        plan = fakePlan { planProduct = "foo" }
+    let 
+      user = fakeUser { userSubscriptions = [] }
+      plan = fakePlan { planProduct = "foo" }
 
-    subscribe user plan `shouldBe` [Subscribe user plan] 
+    subscribe user plan 
+      `shouldBe` 
+        [Subscribe user plan] 
 ```
 
 Note:
@@ -155,20 +170,23 @@ types, then we can do something similar:
 ```haskell
 -- Haskell
 describe "subscribe" $ do
-  prop "should subscribe an empty user" $ \user plan -> do
+  prop "should subscribe an empty user" $ 
+    \user plan -> do
     let user' = user { userSubscriptions = [] }
-    subscribe user' plan `shouldBe` [Subscribe user' plan]
+
+    subscribe user' plan 
+      `shouldBe` 
+        [Subscribe user' plan]
 ```
 
 Note:
 
 Since our commands and inputs are just dumb data, we can easily generate
-arbitrary ones to get confidence that we're doing the right thing, as well as
+arbitrary values to get extra confidence that we're doing the right thing, as well as
 ignoring stuff that's incidental to what we're working on.
 
 
 ```ruby
-# Ruby
 describe "subscribe" do
   it "cancels a related plan" do
     user, plan, old_sub = 3.times { double() }
@@ -189,7 +207,9 @@ end
 Note:
 
 We can easily write tests for more complex business logic too. Here we're
-verifying that our subscribe method cancels old plans on the same product.
+verifying that our subscribe method cancels old plans on the same product.  The
+test creates three stubs, makes the plan and subscription have the same
+product, and finally makes some assertions about what the stubs contain.
 
 
 # Discard Stubs, 
@@ -209,9 +229,12 @@ OK, so if you're really anti-stubbing, then you hopefully are just using dumb
 value classes. If you do that, then you don't need to stub anything out at all.
 Here's our minimal data model.
 
+After all, stubbing/mocking like this isn't easily generalizable to other
+languages and environments. Value objects, on the other hand, are really easy
+to implement in any language.
+
 
 ```ruby
-# Ruby
 describe "subscribe" do
   it "cancels a related plan" do
     sub  = Subscription.new("foo")
@@ -247,7 +270,6 @@ random values and assert that they hold.
 
 
 ```ruby
-# Ruby
 describe "Add" do
   it "is commutative" do
     100.times do
@@ -267,14 +289,21 @@ end
 
 Note:
 
-So here are the property tests for adding two numbers. We can recover a more natural language specification for these properties as:
+So here are the property tests for adding two numbers. It can kinda be tricky
+to express business logic in such a mathematical way. Fortunately,
+specifications for business logic often resemble these sorts of properties. We
+can recover a more natural language specification for these properties as:
 
 
 # Properties:
 
 1. Subscribing a user to a plan should always issue a subscribe command for that plan
 2. Subscribing a user to a plan should always issue cancel commands for subscriptions on the same product
-3. Subscribing a user to a plans should not alter plans on other products
+3. Subscribing a user to a plan should not cancel plans on other products
+
+Note:
+
+These are the properties that we want to express in our business logic. And, as it happens, we can convert these directly to property tests!
 
 
 ```ruby
@@ -293,20 +322,25 @@ Note:
 
 So this property generates a bunch of random users, a bunch of random plans, and
 asserts that the commands *always* include a subscribe command. We'll assume
-that the generator makes sensible choices.
+that the generator makes sensible choices: problems with QuickCheck's random
+generation of values can certainly cause the test to not assert what you think
+it asserts.
 
 
 ```haskell
 describe "subscribe" $ do
-  prop "it always subscribes to a given plan" $ \user plan ->
-    subscribe user plan 
-      `shouldInclude`
-        Subscribe user plan
+  prop "it always subscribes to a given plan" $ 
+    \user plan ->
+      subscribe user plan 
+        `shouldInclude`
+          Subscribe user plan
 ```
 
 Note:
 
-The Haskell QuickCheck properties look pretty similar. While we don't have the same correctness guarantees in Ruby and Haskell, you can tell that we're getting pretty close.
+The Haskell QuickCheck properties look pretty similar. While we don't have the
+same correctness guarantees in Ruby and Haskell, you can tell that we're
+getting pretty close.
 
 
 ```ruby
@@ -327,25 +361,31 @@ end
 
 Note:
 
-This property tests that we always cancel related plans.
+This property tests that we always cancel related plans.  We generate our
+random user and plan, and then create the list of cancellations that we expect.
+Finally, we assert that all of the cancellations exist in the commands array.
 
 
 ```haskell
 describe "subscribe" $ do
-  prop "it always cancels related plans" $ \user plan -> do
-    let cancellations = 
+  prop "it always cancels related plans" $ 
+    \user plan -> do
+      let 
+        cancellations = 
           map Cancel 
-            . subsOnProduct (userSubscriptions user) 
+            . subsOnProduct subs
             $ planProduct plan
+        subs = userSubscriptions user
 
-    subscribe user plan
-      `shouldSatisfy`
-        \commands -> cancellations `isSubsetOf` commands
+      subscribe user plan
+        `shouldSatisfy` 
+          (cancellations `isSubsetOf`)
 ```
 
 Note:
 
-And here we are in Haskell. This test works exactly the same logic as the above Ruby code.
+And here we are in Haskell. This test works exactly the same logic as the above
+Ruby code.
 
 
 ```ruby
@@ -366,27 +406,33 @@ end
 
 Note:
 
-Finally, we can test that we don't cancel any plans that aren't related to the one we're subscribing for.
-This technique is crazy powerful for verifying the correctness of our business logic.
+Finally, we can test that we don't cancel any plans that aren't related to the
+one we're subscribing for.  This technique is crazy powerful for verifying the
+correctness of our business logic.
 
 
 ```haskell
 describe "subscribe" $ do
-  prop "doesn't cancel unrelated plans" $ \user plan -> do
-    let unrelatedCancels =
+  prop "doesn't cancel unrelated plans" $ 
+    \user plan -> do
+      let 
+        unrelatedCancels =
           map Cancel
-            . subsNotOnProduct (userSubscriptions user)
+            . subsNotOnProduct subs
             $ planProduct plan
-
-    subscribe user plan 
-      `shouldSatisfy`
-        \commands -> all (`notElem` unrelatedCancels) commands
+        subs = userSubscriptions user
+  
+      subscribe user plan 
+        `shouldSatisfy`
+          all (`notElem` unrelatedCancels)
 ```
 
 Note:
 
-I'm pretty pleased that our Ruby tests are about as good as our Haskell tests. 
-Where a lot of functional programming techniques feel awkward and clumsy when ported to object oriented languages, this technique seems to work really well for both.
+I'm pretty pleased that our Ruby tests are about as good as our Haskell tests.
+Where a lot of functional programming techniques feel awkward and clumsy when
+ported to object oriented languages, this technique seems to work really well
+for both.
 
 
 # Property Testing

@@ -15,8 +15,34 @@ There's something missing, though.
 Note:
 
 What if we want to change our commands based on a return value of a handler?
-Let's look at the following code.
+We can't really do that.
+In fact, if we look at the type of our commands, we'll see that there's *no way* for a command to affect another command!
 
+
+# Firewalled
+
+```haskell
+data SubscribeCommand
+  = Subscribe User Plan
+
+data List a = Nil | Cons a (List a)
+
+type Commands = List SubscribeCommand
+```
+
+Note:
+
+A Subscribe command has no way of returning a value or meaningfully affecting
+the commands that comes next. We know this through parametricity -- the type of
+a list doesn't allow the `a` parameters to influence the structure of the list.
+
+The same problem exists for binary trees, streams, or whatever other
+traversable data structure you can think of.
+
+Lets look at some business logic that would be impossible to implement as this sort of command.
+
+
+# Hmm...
 
 ```ruby
 def charge_user(user)
@@ -37,60 +63,23 @@ to indicate the output effect. We iterate over the users subscriptions, and if
 the user's current balance is at least the subscription price, then we charge
 the subscription to their account.
 
-We can't just take the balance as a parameter, because it changes during execution.
+We can't just take the balance as a parameter, because it changes during
+execution when we charge the user. 
 
-
-```ruby
-def subs_to_charge(user)
-  balance = user.balance?
-  result = []
-  subscriptions.each do |subscription|
-    if balance >= subscription.price
-      result << subscription
-      balance -= subscription.price
-    end
-  end
-  result
-end
-```
-
-Note:
-
-We could create an array of subscriptions to charge for based on the users
-current balance, and then run charge! on those subscriptions.
-
-
-```ruby
-def charge_user(user)
-  charges = subs_to_charge(user)
-  charges.each do |subscription|
-    user.charge!(subscription.price)
-  end
-
-  # Array difference:
-  subs_to_notify = user.subscriptions - charges
-  subs_to_notify.each do |subscription|
-    send_balance_notice!(user, subscription)
-  end
-end
-```
-
-Note:
-
-This is about as nice as that looks. It's still not great. Let's use the command pattern.
+Let's start by identifying the commands we'd need to implement this.
 
 
 ## Identify Commands
 
 ```ruby
 Charge =
-  Struct.new(:user, :amount)
+  Value.new(:user, :amount)
 
 SendBalanceNotice = 
-  Struct.new(:user, :subscription)
+  Value.new(:user, :subscription)
 
 UserBalance = 
-  Struct.new(:user)
+  Value.new(:user)
 ```
 
 Note:
@@ -107,26 +96,6 @@ computation. They're "maps". We need a way to construct our action plans
 dynamically, without having access to the actual values.
 
 
-## Allowing input effects...
-
-```ruby
-def charge_user(user)
-  user.subscriptions.map do |subscription|
-    if user.balance? >= subscription.price
-      Charge.new(user, subscription.price)
-    else
-      SendBalanceNotice.new(user, subscription)
-    end
-  end
-end
-```
-
-Note:
-
-If we allow input effects, then we just build the command list as normal. This
-can be an OK solution if your input queries aren't too complicated or difficult to deal with. However, we *really* don't want to have to deal with that. So let's figure out how to *build* our dynamic instructions without actually running the effects.
-
-
 # What to do next?
 
 ```ruby
@@ -137,14 +106,15 @@ Note:
 
 With the array mapping, we answer "What do we do next" by taking the next item
 in the array. If we want to have a more dynamic structure, then we can't be
-using an array. Let's add an `:and_then` parameter to each command.
+using an array, or other traversable structure. Let's add an `:and_then`
+parameter to each command.
 
 
 # Next!
 
 ```ruby
 Charge = 
-  Struct.new(:user, :amount, :and_then)
+  Value.new(:user, :amount, :and_then)
         #    ^      ^        ^
         #    |      |        +-- output
         #    +------+----------- input
@@ -152,18 +122,38 @@ Charge =
 
 Note:
 
-So, this is a new Charge command that has an and_then parameter to specify what
+So, this is a new Charge command that has an `and_then` parameter to specify what
 happens afterwards. What is "next" going to look like? Well, Charge doesn't
 have a meaningful output, so the next thing in the sequence won't take any
 input. Since we're talking about the next action to take in our sequence, it
 should be a command.
 
 
+# Next!
+
+```haskell
+data ChargeCommand
+  = Charge User Amount ChargeCommand
+```
+
+- Do this, and then do this next thing
+
+Note:
+
+I often find, even when programming in Ruby or PHP, that it's extremely helpful
+to write data definitions in Haskell, especially if things are starting to get
+complicated. This is a formulation of the previous Ruby command. It's a
+recursively defined data type!
+
+Now, let's cover the novel bit -- the input query, where we ask the user's
+balance.
+
+
 # And then, ...
 
 ```ruby
 UserBalance =
-  Struct.new(:user, :and_then)
+  Value.new(:user, :and_then)
         #    ^      ^
         #    |      +-- output
         #    +--------- input
@@ -171,23 +161,61 @@ UserBalance =
 
 Note:
 
-This is our new User Balance struct. It has an `and_then` parameter also. This
+This is our new User Balance value. It has an `and_then` parameter also. This
 parameter will get access to the balance returned from the command when it is
 finally executed, and will use that information to construct the next action in
-the sequence.
+the sequence. This means it will be a callback!
+
+Let's write that in Haskell:
+
+
+# And then, ...
+
+```haskell
+data ChargeCommand
+  = Charge User Amount ChargeCommand
+  | UserBalance User (Amount -> ChargeCommand)
+```
+
+Note:
+
+We've added a new command to our ChargeCommand data type. This one has a
+*callback* from an Amount to a ChargeCommand when we construct it.
 
 
 # Finally!
 
 ```ruby
-Return = Struct.new(:result)
+Return = Value.new(:result)
 ```
 
 Note:
 
-We need to have some way of terminating the chain of execution. This class does
+We need to have some way of terminating the chain of execution. This command does
 it. We call it `Return` because we can think of it like the `return` keyword in
 imperative programming: "stop executing and return this value".
+
+
+# Finally!
+
+```haskell
+data ChargeCmd
+  = Charge User Amount ChargeCmd
+  | UserBalance User (Amount -> ChargeCmd)
+  | SendBalanceNotice User Subscription ChargeCmd
+  | Return
+```
+
+(`Cmd` so it'll fit on the slide)
+
+Note:
+
+The Haskell code doesn't have anything to return with, really, so we make it an
+empty constructor.
+
+To keep things consistent in the Ruby, we'll make *all* of the `and_then`
+parameters a callback. The no-value ones will just have empty callbacks, for
+simplicity.
 
 
 # A single charge
@@ -198,17 +226,17 @@ Let's look at how this is with a single charge.
 
 
 ```ruby
+pure = -> a { Return.new a }
+
 def charge_or_email(user, subscription)
   UserBalance.new(user, -> (balance) do
     if balance >= subscription.price
-      Charge.new(user, subscription.price, -> _ do
-        Return.new nil
-      end)
+      Charge.new(
+        user, subscription.price, pure
+      )
     else
       SendBalanceNotice.new(
-        user, subscription, -> _ do
-          Return.new nil
-        end
+        user, subscription, pure
       )
     end
   end)
@@ -225,12 +253,33 @@ Return the user. Otherwise, we create a SendBalanceNotice command with the user
 and the subscription.
 
 
+```haskell
+chargeOrEmail 
+  :: User -> Subscription -> ChargeCommand
+chargeOrEmail user sub =
+  UserBalance user sub $ \balance -> 
+    let price = subscriptionPrice sub in
+    if balance >= subscriptionPrice sub
+      then 
+        Charge user price Return
+      else 
+        SendBalanceNotice user sub Return
+```
+
+Note:
+
+This is the Haskell equivalent of the above code.
+It's basically the same thing.
+
+
 # Interpreting
 
 Note:
 
 Interpreting these commands is relatively straight forward.
 
+
+## Interpreting 
 
 ```ruby
 class UserBalanceStripe
@@ -246,8 +295,29 @@ Note:
 
 For the user balance, We extract the user from the command, call Stripe to get
 the user's balance, and pass the balance to the command's "And then" method.
-Finally, we return the command that is generated from this lambda.
+Finally, we return the command that is generated from this lambda, which
+generates the next command to interpret. 
 
+
+## Interpreting 
+
+```haskell
+chargeCommand :: ChargeCommand -> IO ()
+chargeCommand (UserBalance user andThen) = do
+  balance <- Stripe.getBalanceFor user
+  let nextCommand = andThen balance
+  chargeCommand nextCommand
+  
+```
+
+Note:
+
+For handling this query, we get the user's balance from Stripe. We pass that to
+`andThen`, which constructs the next command we need to interpret. We'll call
+`chargeCommand` recursively to handle the next case.
+
+
+## Locally Testing
 
 ```ruby
 class UserBalanceLocal
@@ -271,10 +341,27 @@ it with a mapping from user IDs to their balances, and when we receive the
 command, we just check that hash map.
 
 
+## Locally Testing
+
+```haskell
+chargeLocally 
+  :: ChargeCommand 
+  -> State (Map UserId Amount) ()
+chargeLocally (UserBalance user andThen) = do
+  balance <- gets (Map.lookup (userId user))
+  chargeLocally (andThen balance)
+```
+
+Note:
+
+The Haskell is basically the same thing, just with different syntax.
+
+
 ```ruby
 class ChargeStripe
   def run(command)
-    command.user.charge!(command.subscription.price)
+    price = command.subscription.price
+    command.user.charge!(price)
     command.and_then.call(nil)
   end
 end
@@ -282,7 +369,9 @@ end
 
 Note:
 
-For charging against stripe, it's basically the same thing. We call the charge method on the command's user, and then generate the next command in the sequence.
+For charging against stripe, it's basically the same thing. We call the charge
+method on the command's user, and then generate the next command in the
+sequence. We'll pass `nil` to that callback, sicne there's no meaningful value here.
 
 
 # Put it all together
@@ -296,54 +385,26 @@ Whereas the older command pattern used a "map" to go over the commands, we need 
 # Reduce
 
 ```ruby
-[1, 2, 3]                    #collection
-  .reduce(0,                 # starting value
-  -> (accumulator, next_value) do
-    accumulator + next_value # reducer
-  end
+[1, 2, 3]                      # collection
+  .reduce(
+    0,                         # starting value
+    -> (accumulator, next_value) do
+      accumulator + next_value # reducer
+    end
 )
 # => 6
 ```
 
 Note:
 
-Let's recap reducing, since it can be difficult. Reducing a collection takes a combination function, a starting value, and a collection of things to reduce. We take the first item in the collection, combine it with the starting value using our combination function. That gives us a new reducing value, which we then combine with the second element of our collection.
+Let's recap reducing, since it can be a little tricky. Reducing a collection
+takes a combination function, a starting value, and a collection of things to
+reduce. We take the first item in the collection, combine it with the starting
+value using our combination function. That gives us a new reducing value, which
+we then combine with the second element of our collection.
 
 
-# Illustrated
-
-Note:
-
-Since reduce can be a bit tricky to get at first, here's how it evaluates.
-
-
-```
-f = -> (acc, x) { acc + x }
-
-[1, 2, 3].reduce(0, f) 
-
-[2, 3].reduce( f(0, 1), f)
-[2, 3].reduce( 1, f)
-
-[3].reduce(f(1, 2), f)
-[3].reduce(3, f)
-
-[].reduce(f(3, 3), f)
-[].reduce(6, f)
-
-6
-``` 
-
-Note:
-
-We start by defining our combiner, which just adds the two numbers. We pluck
-the first number off the array, pass it to the combining function with the
-initial accumulator 0, and that becomes our new accumulator. We continue
-plucking the first element off and combining with the accumulator until the
-array is empty. Once the array is empty, the accumulator is returned.
-
-
-# Reducing Command Trees
+## Reducing Command Trees
 
 ```ruby
 class Interpeter
@@ -427,148 +488,251 @@ Or we could bind the sequences together!
 
 Note:
 
-We terminate execution when we use the Return command.
-So we should be able to bind two trees together by replacing the Returns in the original tree with the sequences we're building out.
+We terminate execution when we use the Return command.  So we should be able to
+bind two trees together by replacing the Returns in the original tree with the
+sequences we're building out.
 
 
 ```ruby
-def Interpreter
-  attr_reader :binds
-  def initialize
-    @binds = []
-  end
-
-  def bind(next)
-    @binds << next
-    self
-  end
-
+def add_next(cmd, and_then)
+  case cmd
+  when Return
+    and_then.call(cmd.result)
+  when Charge
+    Charge.new(
+      cmd.user, cmd.price, -> () do
+        add_next(cmd.and_then.call, and_then)    
+      end
+    )
   # ...
 ```
 
 Note:
 
-First, we create an empty list of binds, and we expose a function for binding
-another command to our interpreter. These binds are going to be the same thing
-as the `and_then` parameters we've been dealing with: a function that returns
-a command.
+The basic structure that we'll be working with is to analyze the command, and
+create a new copy of it with the same values. However, in that callback,
+instead of calling it directly, we'll call it, and then call `add_next`
+recursively with the callback. Eventually, we'll bottom out and hit the Return
+class, where we'll pass the command result to it, thus generating the new
+command.
 
 
 ```ruby
-  def interpret(command)
-    case command
-    when Return
-      result   = command.result
-      and_then = binds.shift
-
-      if and_then
-        interpret(and_then.call(result))
-      else
-        result
+  when UserBalance
+    UserBalance.new(
+      cmd.user, -> (balance) do
+        add_next(
+          cmd.and_then.call(balance), and_then
+        )
       end
-    else 
-      # ...
+    )
+  # ...
+end
 ```
 
 Note:
 
-We want to identify the Returns, or ends, in our current command structure. If we have a return, then we want to take the first "next path" out of our array, and interpret that path. Otherwise, we just return the result of this and we're done.
+The query uses a similar pattern. We create a new UserBalance command, and in
+the callback, we pass the balance to the original command's callback, and
+recurse into `add_next`.
+
+These methods should really be on the class or module for these value objects:
+specifically, we should have a way to map a function over the `and_then` part
+of the value, keeping the rest the same, and the `add_next` method should also
+be a class member.
 
 
+keep it classy
+
+```ruby
+class UserBalance < Value(:user, :and_then)
+  def add_next(&callback)
+    self.with(and_then: (balance) -> do
+      self.and_then
+          .call(balance)
+          .add_next(callback)
+    end)
+  end
+
+  def map(&callback)
+    self.add_next do |value| 
+      Return(callback.call(value))
+    end
+  end
+end
 ```
-def charge_user(user, subscriptions)
-  interpreter = Interpreter.new
-  user.subscriptions.each do |subs|
-    interpreter.bind -> {
-      UserBalance.new user, -> (balance) {
-        if balance >= subs.price
-          Charge.new user, subs.price, -> {
-            Return.new nil
-          }
+
+Note:
+
+OK, so this is how we'd extend the command classes to provide the `add_next`
+method, and also the `map` method. And, we actually don't need any of the
+details of the original class here -- we can abstract this out to The Scary M
+Word: module!
+
+
+```ruby
+module Monad
+  def add_next(&callback)
+    with(and_then: (value) -> do
+      and_then
+        .call(value)
+        .add_next(callback)
+    end)
+  end
+
+  def map(&callback)
+    add_next do |value|
+      Return(callback.call(value))
+    end
+  end
+end
+```
+
+Note:
+
+Now, we can simply include this module in all of our commands, and we get the
+add_next and map functions for free.
+
+
+```ruby
+class Charge < Value(:user, :amount, :and_then)
+  include Monad
+end
+
+class UserBalance < Value(:user, :and_then)
+  include Monad
+end
+
+pure = -> (x) do
+  Return(x)
+end
+```
+
+Note:
+
+Nice. I'm sure you can imagine a macro that gives you even nicer syntax.
+Let's check out how our implementation looks now!
+
+
+```ruby
+def charge_user(user)
+  bal = UserBalance.new(user, pure)
+
+  user.subscriptions.reduce bal do |cmd, sub|
+      cmd.add_next do |balance|
+        if balance >= sub.price
+          Charge.new(user, sub.price, -> () do 
+            bal
+          end)
         else
-          SendBalanceNotice.new user, subs, -> {
-            Return.new nil
-          }
-        end
-      }
-    }
-  end
-end
+          SendBalanceNotice.new(
+            user, sub, -> () { bal }
+          )
+        end; end; end; end
 ```
 
 Note:
 
-So this is how we'd write that with our new command pattern.
+This is the logic now! We reduce over the subscriptions, and for each one, we extend the command, either charging the user or sending a notification email. This structure perfectly encodes the logic we want, and it won't be evaluated until we actually run it. So we've successfully created an execution plan.
 
-The syntax is a little ugly. Let's write some helpers that clean it up.
+The syntax is a little nicer now -- you're pretty close to something idiomatically Ruby. I bet we can get nice syntax in Haskell, too.
 
 
-```ruby
-nothing = -> _ { Return.new nil }
-
-def charge(user, amount)
-  Charge.new(user, amount, nothing)
-end
-
-def send_balance_notice(user, subscription)
-  SendBalanceNotice.new(
-    user, subscription, nothing
-  )
-end
-
-def user_balance(user)
-  UserBalance.new(user, nothing)
-end
+```haskell
+data ChargeCmd
+  = Charge User Amount ChargeCmd
+  | UserBalance User (Amount -> ChargeCmd)
+  | SendBalanceNotice User Subscription ChargeCmd
+  | Return
 ```
 
 Note:
 
-So these functions make up our "empty constructors." These trees just do one thing, and then they return nothing. 
+Some of the nicer DSLs in Haskell use `do` syntax. If we weant `do`, then we
+need to convet this data type into a Monad. But monads only work if the type
+has a type parameter. We can add a type parameter to this by allowing Return to have a value.
 
 
-## Improved Syntax!
-
-```ruby
-def charge_user(user)
-  user.subscriptions.reduce(Interpreter.new) 
-    do |commands, subscription|
-    commands.bind -> _ do
-      user_balance(user)
-    end.bind -> (balance) do
-      if balance >= subscription.price
-        charge(user, subscription.price)
-      else
-        send_balance_notice(user, subscription)
-      end
-    end
-  end
-end
+```haskell
+data ChargeCmd a
+  = Charge User Amount (ChargeCmd a)
+  | UserBalance User (Amount -> ChargeCmd a)
+  | SendBalanceNotice User Sub (ChargeCmd a)
+  | Return a
 ```
 
 Note:
 
-So this syntax is a good bit nicer. It's not as clean as the plain ol' imperative syntax, but it gives us something much more powerful.
-
-The return of this is a data structure. It's a series of instructions that we can carry out and interpreter however we like.
-
-All we have to do is provide the right interpreters for each of the individual commands, and the code will glue and compose super nicely.
+Now that we've got a type parameter, we just need to write the instance.
+It turns out, the `add_next` function we defined is exactly the code we need for our monad instance.
 
 
-```ruby
-def charge_user(user)
-  user
-    .subscriptions
-    .reduce(Interpreter.new) do |cmd, sub|
-      cmd.bind -> _ do
-        charge_or_email(user, sub)
-      end
-    end
-end
+```haskell
+instance Monad ChargeCmd where
+  (>>=) :: ChargeCmd a 
+        -> (a -> ChargeCmd b) 
+        -> ChargeCmd b
+  command >>= k =
+    case command of
+      Return a ->
+        k a
+      Charge user amount next ->
+        Charge user amount (next >>= k)
+      UserBalance user next ->
+        UserBalance user (\balance -> 
+          next balance >>= k)
+      SendBalanceNotice user sub next ->
+        SendBalanceNotice user sub (next >>= k)
 ```
 
 Note:
 
-Here's the same code that uses the function we defined earlier, demonstrating that it's pretty easy to compose code that uses this structure.
+So here's our monad instance. The weird symbol function up there is pronounced "bind", and it takes a ChargeCmd as it's first argument. The second argument is a function which accepts an "a" value, returning a ChargeCmd b. The return is a ChargeCmd b.
+
+We recursively dig deeper and deeper intot he command structure, until we eventually find a 'Return' constructor. Then we apply the callback to the value contained there.
+Let's look at our program in Haskell now, to see how we can take advantage of the new syntax.
+
+
+## The Helpers
+
+```haskell
+userBalance :: User -> ChargeCmd Double
+userBalance user = UserBalance user Return
+
+charge :: User -> Amount -> ChargeCmd ()
+charge user amount = 
+  Charge user amount (Return ())
+
+sendBalanceNotice 
+  :: User -> Subscription -> ChargeCmd ()
+sendBalanceNotice user subscription =
+  SendBalanceNotice user subscription (Return ())
+```
+
+Note:
+
+These guys are going to help our syntax look nice, by presenting a way of lifting our command data structure into a more ordinary function call, easily compatible with the do notation.
+
+
+# YEAAHHHH
+
+```haskell
+chargeSubscriptions :: User -> ChargeCmd ()
+chargeSubscriptions user =
+  for_ (userSubscriptions user) $ \sub -> do
+    balance <- userBalance user
+    let price = subscriptionPrice sub
+    if balance >= price
+      then charge user price
+      else sendBalanceNotice user sub
+```
+
+Note:
+
+Oh yeah!!! This is awesome. We're using entirely normal Haskell syntax to
+express our business logic, without having to do anything too weird or fancy. 
+Indeed, this looks almost exactly like the code we'd run in IO, but instead of
+running directly in IO, we're just constructing a data structure.
 
 
 # Intrigued?
@@ -580,7 +744,8 @@ Note:
 If you want to learn more about this final evolution of the command pattern,
 the theory behind it is called the free monad. It's super interesting and very
 powerful. Unfortunately, most typed languages can't express it well. Haskell
-and Scala both have great free monad libraris, but Java/F#/C#/etc. are unable
+and Scala both have great free monad libraries, but Java/F#/C#/etc. are unable
 to express these things.
 
-Dynamic languages aren't restricted by types, but it's on you to ensure everything plugs together well.
+Dynamic languages aren't restricted by types, but it's on you to ensure
+everything plugs together well.

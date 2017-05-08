@@ -154,11 +154,10 @@ parameter.  Does this function have any input effects? If so, what are they?
 shouldBill userId = do
   user <- Sql.get userId
   time <- getCurrentTime
-  pure (
+  pure $
     lastBillingDate user 
       `isBefore` 
         time .-^ days 30
-    )
 ```
 
 Note:
@@ -167,77 +166,3 @@ Haskell makes it super easy to figure out whenever you have input effects. The
 IO type is basically "I do all the effects," and if you're binding out of IO or
 anything like IO, then you've got input effects. This code kinda cheats the
 answer for us: the user is an input effect, as is getting the current time.
-
-
-# Input effects are ezpz
-
-```ruby
-# Ruby
-def should_bill?(user, time)
-  user.last_billing_date <= time - 30.days
-end
-```
-
-```haskell
--- Haskell
-shouldBill user time =
-  lastBillingDate user `isBefore` time .-^ days 30
-```
-
-Note:
-
-We've extracted all of the input effects from the method. The method depends
-solely on the values we pass in as input now. The Ruby starts to look a lot
-like the Haskell!
-
-
-# Comparison of tests:
-
-Note:
-
-OK, so let's compare the tests of our methods, before and after extracting the
-input effects.
-
-
-## Implicit:
-
-```ruby
-# Ruby
-it "is true if older than 30 days ago" do
-  user = double()
-  user.stub(:last_billing_date) { 31.days.ago }
-
-  expect(User)
-    .to receive(:find).with(1)
-    .and_return(user) 
-
-  expect(should_bill?(1)).to be_true
-end 
-```
-
-Note:
-
-We're overriding the global User name and making it return a stub. Since we
-can't even do this in Haskell I won't show the test, and because (let's be
-real) making our functions abstract in the functionality they do sounds boring.
-
-
-## Explicit:
-
-```ruby
-# Ruby
-it "is false if newer than 30 days" do
-  user = double()
-  user.stub(:last_billing_date) { 15.days.ago }
-
-  expect(should_bill?(user, Time.now))
-    .to be_false
-end
-```
-
-Note:
-
-These tests are pretty similar. Now we get to explicitly control the time that
-we're comparing against. We also don't have to worry about mocking the User
-class. We just create some object that responds to last billing date, and can
-provide our constraints.

@@ -88,6 +88,7 @@ a value. In Ruby (or any other language, really) you have to either *know* or
 read the entire call graph of the code you're talking about. Haskell tracks it
 in the type, which makes these refactors really easy.
 
+
 # Values and Effects
 
 
@@ -316,6 +317,10 @@ Note:
 So stubbing global terms like this in Haskell? It's not possible. Sorry, or
 not, I guess, depending on whether you find the previous code disgusting or
 pleasantly concise.
+
+I know that someone probably has some awesome hack to make top level spies or
+stubbing work. I don't... really want to hear about it. Sorry! I can't be
+trusted with that kind of dark magic.
 
 
 # Dependency Injection?
