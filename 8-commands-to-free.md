@@ -200,10 +200,10 @@ imperative programming: "stop executing and return this value".
 
 ```haskell
 data ChargeCmd
-  = Charge User Amount ChargeCmd
-  | UserBalance User (Amount -> ChargeCmd)
-  | SendBalanceNotice User Subscription ChargeCmd
-  | Return
+  = Return a
+  | Charge User Amount (ChargeCmd a)
+  | UserBalance User (Amount -> ChargeCmd a)
+  | SendNotice User Subscription (ChargeCmd a)
 ```
 
 (`Cmd` so it'll fit on the slide)
@@ -225,23 +225,23 @@ Note:
 Let's look at how this is with a single charge.
 
 
-```ruby
+<pre><code class="lang-ruby hljs" data-trim data-noescape>
 pure = -> a { Return.new a }
 
 def charge_or_email(user, subscription)
-  UserBalance.new(user, -> (balance) do
+  UserBalance.new(user, -> (balance) do <span class="fragment">
     if balance >= subscription.price
       Charge.new(
         user, subscription.price, pure
-      )
+      )</span><span class="fragment">
     else
       SendBalanceNotice.new(
         user, subscription, pure
       )
-    end
+    end</span>
   end)
 end
-```
+</code></pre>
 
 Note:
 

@@ -2,17 +2,25 @@
 
 ## To Be Free!
 
-http://www.parsonsmatt.org/command-pattern
+Matt Parsons
 
 Note:
 
 Hi! I'm Matt Parsons, and I'd like to talk to you about some cool software
 practices I've been using recently to make better software.
 
-If you want to follow along with the slides, they're available at the URL above.
+
+# this is me 
+
+![](image_MattParsons.jpg)
+
+Note:
+
+So this is me on the internet, and now I'm me in real life. I write Haskell,
+PHP, and JavaScript for a company called Seller Labs.
 
 
-# Better?
+# Better code?
 
 * Performance?
 <!-- .element: class="fragment" -->
