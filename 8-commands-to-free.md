@@ -255,15 +255,15 @@ and the subscription.
 
 ```haskell
 chargeOrEmail 
-  :: User -> Subscription -> ChargeCommand
+  :: User -> Subscription -> ChargeCommand ()
 chargeOrEmail user sub =
   UserBalance user sub $ \balance -> 
     let price = subscriptionPrice sub in
     if balance >= subscriptionPrice sub
       then 
-        Charge user price Return
+        Charge user price (Return ())
       else 
-        SendBalanceNotice user sub Return
+        SendBalanceNotice user sub (Return ())
 ```
 
 Note:
@@ -458,14 +458,12 @@ There's one last piece of the puzzle. We need a way to compose two command trees
 def charge_or_email(user, subscription)
   UserBalance.new(user, -> (balance) do
     if balance >= subscription.price
-      Charge.new(user, subscription.price, -> _ do
-        Return.new(user) 
-      end)
+      Charge.new(
+        user, subscription.price, pure
+      )
     else
       SendBalanceNotice.new(
-        user, subscription, -> _ do
-          Return.new(user) 
-        end
+        user, subscription, pure
       )
     end
   end)
@@ -589,17 +587,24 @@ end
 class UserBalance < Value(:user, :and_then)
   include Command
 end
+
+class Return < Value(:result)
+  def and_then(&block)
+    block.call(self.result)
+  end
+end
 ```
 
 Note:
 
-So here's how we define our command types. We'll also want to have some helpers to make defining these things more convenient.
+So here's how we define our command types. Return gets a special case --
+instead of chaining the next command to the and-then parameter, we just pass
+the result to the block directly. We'll also want to have some helpers to make
+defining these things more convenient.
 
 
 ```ruby
-pure = -> (x) do
-  Return(x)
-end
+pure = -> (x) { Return(x) }
 
 def user_balance(user)
   UserBalance.new(user, pure)
@@ -664,9 +669,8 @@ data ChargeCmd a
 Note:
 
 Some of the nicer DSLs in Haskell use `do` syntax. If we weant `do`, then we
-need to convert this data type into a Monad.  We've got a type parameter, we
-just need to write the instance.  It turns out, the `add_next` function we
-defined is exactly the code we need for our monad instance.
+need to make this type an instance of Monad. 
+It turns out, the `add_next` function we defined is almost exactly the code we need for our monad instance.
 
 
 ```haskell
@@ -704,7 +708,8 @@ take advantage of the new syntax.
 
 ```haskell
 userBalance :: User -> ChargeCmd Double
-userBalance user = UserBalance user Return
+userBalance user = 
+  UserBalance user (balance -> Return balance)
 
 charge :: User -> Amount -> ChargeCmd ()
 charge user amount = 
