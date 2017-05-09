@@ -553,37 +553,24 @@ class UserBalance < Value(:user, :and_then)
           .add_next(callback)
     end)
   end
-
-  def map(&callback)
-    self.add_next do |value| 
-      Return(callback.call(value))
-    end
-  end
-end
 ```
 
 Note:
 
 OK, so this is how we'd extend the command classes to provide the `add_next`
 method, and also the `map` method. And, we actually don't need any of the
-details of the original class here -- we can abstract this out to The Scary M
+details of the original class here -- we can abstract this out to The Scary 'M'
 Word: module!
 
 
 ```ruby
-module Monad
+module Command
   def add_next(&callback)
-    with(and_then: (value) -> do
-      and_then
+    self.with(and_then: (value) -> do
+      self.and_then
         .call(value)
         .add_next(callback)
     end)
-  end
-
-  def map(&callback)
-    add_next do |value|
-      Return(callback.call(value))
-    end
   end
 end
 ```
@@ -596,61 +583,74 @@ add_next and map functions for free.
 
 ```ruby
 class Charge < Value(:user, :amount, :and_then)
-  include Monad
+  include Command
 end
 
 class UserBalance < Value(:user, :and_then)
-  include Monad
-end
-
-pure = -> (x) do
-  Return(x)
+  include Command
 end
 ```
 
 Note:
 
-Nice. I'm sure you can imagine a macro that gives you even nicer syntax.
-Let's check out how our implementation looks now!
+So here's how we define our command types. We'll also want to have some helpers to make defining these things more convenient.
+
+
+```ruby
+pure = -> (x) do
+  Return(x)
+end
+
+def user_balance(user)
+  UserBalance.new(user, pure)
+end
+
+def charge(user, amount)
+  Charge.new(user, amount, pure)
+end
+
+def send_balance_notice(user, subscription)
+  SendBalanceNotice.new(user, subscription, pure)
+end
+```
+
+Note:
+
+The basic command terminates with a Return, so we'll terminate our singleton commands with this pure function.
+The other helpers just make a new object of the right command class, and start it off with the Return constructor.
+When we go to implement more of this stuff, we'll use the `add_next` method to build the chain.
 
 
 ```ruby
 def charge_user(user)
-  bal = UserBalance.new(user, pure)
+  start = user_balance(user)
 
-  user.subscriptions.reduce bal do |cmd, sub|
-      cmd.add_next do |balance|
-        if balance >= sub.price
-          Charge.new(user, sub.price, -> () do 
-            bal
-          end)
-        else
-          SendBalanceNotice.new(
-            user, sub, -> () { bal }
-          )
-        end; end; end; end
+  user.subscriptions.reduce start do |cmd, sub|
+    cmd.add_next do |balance|
+      if balance >= sub.price
+        charge(user, sub.price)
+      else
+        send_balance_notice(user, sub)
+      end
+    end.add_next do 
+      user_balance(user) 
+    end
+  end
+end
 ```
 
 Note:
 
-This is the logic now! We reduce over the subscriptions, and for each one, we extend the command, either charging the user or sending a notification email. This structure perfectly encodes the logic we want, and it won't be evaluated until we actually run it. So we've successfully created an execution plan.
+This is the logic now! We start off with checking the user balance. Then we
+reduce over the subscriptions, and for each one, we extend the command, either
+charging the user or sending a notification email.  We extend that command by
+checking the user's balance.
 
-The syntax is a little nicer now -- you're pretty close to something idiomatically Ruby. I bet we can get nice syntax in Haskell, too.
+This structure perfectly encodes the logic we want, and it won't be evaluated
+until we actually run it. So we've successfully created an execution plan.
 
-
-```haskell
-data ChargeCmd
-  = Charge User Amount ChargeCmd
-  | UserBalance User (Amount -> ChargeCmd)
-  | SendBalanceNotice User Subscription ChargeCmd
-  | Return
-```
-
-Note:
-
-Some of the nicer DSLs in Haskell use `do` syntax. If we weant `do`, then we
-need to convet this data type into a Monad. But monads only work if the type
-has a type parameter. We can add a type parameter to this by allowing Return to have a value.
+The syntax is a little nicer now -- you're pretty close to something
+idiomatically Ruby. I bet we can get nice syntax in Haskell, too.
 
 
 ```haskell
@@ -663,8 +663,10 @@ data ChargeCmd a
 
 Note:
 
-Now that we've got a type parameter, we just need to write the instance.
-It turns out, the `add_next` function we defined is exactly the code we need for our monad instance.
+Some of the nicer DSLs in Haskell use `do` syntax. If we weant `do`, then we
+need to convert this data type into a Monad.  We've got a type parameter, we
+just need to write the instance.  It turns out, the `add_next` function we
+defined is exactly the code we need for our monad instance.
 
 
 ```haskell
@@ -687,10 +689,15 @@ instance Monad ChargeCmd where
 
 Note:
 
-So here's our monad instance. The weird symbol function up there is pronounced "bind", and it takes a ChargeCmd as it's first argument. The second argument is a function which accepts an "a" value, returning a ChargeCmd b. The return is a ChargeCmd b.
+So here's our monad instance. The weird symbol function up there is pronounced
+"bind", and it takes a ChargeCmd as it's first argument. The second argument is
+a function which accepts an "a" value, returning a ChargeCmd b. The return is a
+ChargeCmd b.
 
-We recursively dig deeper and deeper intot he command structure, until we eventually find a 'Return' constructor. Then we apply the callback to the value contained there.
-Let's look at our program in Haskell now, to see how we can take advantage of the new syntax.
+We recursively dig deeper and deeper into the command structure, until we
+eventually find a 'Return' constructor. Then we apply the callback to the value
+contained there.  Let's look at our program in Haskell now, to see how we can
+take advantage of the new syntax.
 
 
 ## The Helpers
