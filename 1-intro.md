@@ -10,14 +10,14 @@ Hi! I'm Matt Parsons, and I'd like to talk to you about some cool software
 practices I've been using recently to make better software.
 
 
-# this is me 
-
-![](image_MattParsons.jpg)
+![](image_MattParsons.jpg) <!-- .element: id="plain" -->
+![](seller-labs-dark.png) <!-- .element: id="plain" -->
 
 Note:
 
 So this is me on the internet, and now I'm me in real life. I write Haskell,
-PHP, and JavaScript for a company called Seller Labs.
+PHP, and JavaScript for Seller Labs. We make web applications to help Amazon
+merchants make more money.
 
 
 # Better code?
@@ -26,13 +26,9 @@ PHP, and JavaScript for a company called Seller Labs.
 <!-- .element: class="fragment" -->
 * Correctness?
 <!-- .element: class="fragment" -->
-* Ease of understanding?
+* Maintainability?
 <!-- .element: class="fragment" -->
-* Ease of reuse?
-<!-- .element: class="fragment" -->
-* Easy to modify?
-<!-- .element: class="fragment" -->
-* Easy to test?
+* Testability?
 <!-- .element: class="fragment" -->
 
 Note:
@@ -41,21 +37,16 @@ Of course, better is subjective. Faster code is better, but performance isn't
 free -- you have to spend time implementing it.  Code that gives the right
 answer is important, but sometimes "close enough" is good enough.
 
-Ease of understanding is important and subjective. I personally have no issue 
-understanding Haskell code, and may trip up with complex Java hierarchies or
-JavaScript scoping rules that are perfectly obvious and idiomatic for a
-familiar programmer.
+Maintainability is another good point. How easy is the software to maintain,
+refactor, and modify? If busienss rules need to change, then how difficult will
+it be to make these logical changes? Unfortunately, this is difficult to
+understand without actually attempting to do the change, so it's often too
+late.
 
-Ease of reuse is a little easier to understand. How hard is it to repurpose
-this code for other related tasks? This is difficult to know without actually
-reusing the code, which may be too late to understand how good the code
-actually is.
-
-Modifiability is important. If business rules need to change, then the code
-needs to change. How difficult this is determines how quickly the business react
-to changing requirements.
-
-Testability -- this is a really good metric for good code!
+Testability -- this is a really good metric for good code! Testing code is
+often the first time that you go to actually use the code you wrote. It's the
+first time you have to setup the surrounding code and infrastructure, and you
+get immediate feedback on how good your code is to reuse.
 
 
 # Test Driven Design
@@ -69,27 +60,33 @@ Testability -- this is a really good metric for good code!
 ### it sucks
 <!-- .element: class="fragment" -->
 
+Note:
+
+If it sucks to write tests for your code, it probably sucks to use your code.
+
 
 # Test Driven Design
 
 * Informs API/library design
+<!-- .element: class="fragment" -->
 * Immediate feedback on code reusability
+<!-- .element: class="fragment" -->
 * Free regression/unit testing
+<!-- .element: class="fragment" -->
 
 Note:
 
-Writing tests first is a great proxy for writing good code. Having "tests" to
-cover correctness and find bugs is just about a nice side effect. You get
-immediate feedback on your library design. If it sucks to write tests for your
-code, it probably sucks to use your code.
+Writing tests first is a great proxy for writing good code.
+You get immediate feedback on your library design.
+Having "tests" to cover correctness and find bugs is just about a nice side effect. 
 
 
 # TDD is hard!
 
 Note:
 
-Writing test-first is *really* difficult. This is partially because writing
-"better" code is really difficult.
+Writing test-first is *really* difficult.
+This is partially because writing code that is nice to test (and, by proxy, reuse/modify/understand/etc) is really difficult.
 
 
 # This isn't a TDD talk

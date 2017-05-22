@@ -7,7 +7,7 @@ Ok, now I'm going to demonstrate a quick example of refactoring some code with c
 
 # Business Logic
 
-1. We're writing a subscription/billing system
+1. We're writing a subscription/billing system for our SaaS stuff
 2. We have many products, and many plans for each product (small, large, enterprise)
 3. We only want customers to have one plan for a given product at a time
 
@@ -16,38 +16,37 @@ Note:
 Here's a brief overview of the spec we've been given.
 
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 def subscribe(user, plan)
-  user.subscriptions.each do |subscription|
+  user.subscriptions<span class="fragment">.each do |subscription|
     if subscription.product == plan.product
       subscription.cancel!
     end
-  end
+  end</span>
 
-  user.subscribe! plan
+  <span class="fragment">user.subscribe!(plan)</span>
 end
-```
+</code></pre></div>
 
 Note:
 
-This method takes a user and a plan that we want to subscribe them to.  We're
-going to iterate over all the users current subscriptions and cancel anything
-on the same product.  Then we finally subscribe them to that plan.
+This method takes a user and a plan that we want to subscribe them to.
+We're going to iterate over all the users current subscriptions and cancel anything on the same product.
+Then we finally subscribe them to that plan.
 
 This is the super imperative algorithm that requires stubs, mocks, etc. to
 test. So we need to refactor it to have fewer effects, so the test story is
 nicer!
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 subcribe user plan = do
   for_ (userSubscriptions user) $ \sub ->
     when (subProduct sub == planProduct plan)
          (Stripe.cancel subscription)
   
   Stripe.subscribe user plan
-```
+</code></pre></div>
 
 Note:
 
@@ -65,21 +64,22 @@ Note:
 Alright, so instead of that initial code, we're going to decouple the construction of our plan with the execution.
 
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 Cancel    = Value.new(:subscription)
 Subscribe = Value.new(:user, :plan)
 
 def subscribe(user, plan)
-  user.subscriptions.filter do |subscription|
+  <span class="fragment">user.subscriptions</span><span class="fragment">.filter do |subscription|
     subscription.product == plan.product
-  end.map do |subscription|
+  end</span><span class="fragment">.map do |subscription|
     Cancel.new(subscription)
-  end.push(Subscribe.new(user, plan))
+  end</span><span class="fragment">.push(Subscribe.new(user, plan))</span>
 end
-```
+</code></pre></div>
 
 Note:
+
+We start out by defining the Value commands that we need.
 
 We start with the users current subscriptions. We filter that list, resulting in
 a list of the users subscriptions that match the new plan's product. These are
@@ -88,23 +88,22 @@ subscriptions. Finally, we push a new Subscribe command to the end of that list,
 subscribing them to the new plan.
 
 
-```haskell
--- Haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 data SubscribeCommand
     = Cancel Subscription
     | Subscribe User Plan
     deriving (Eq, Show)
 
-subscribe :: User -> Plan -> [SubscribeCommand]
+<span class="fragment">subscribe :: User -> Plan -> [SubscribeCommand]
 subscribe user plan = 
-    cancels user ++ [Subscribe user plan]
+    cancels user ++ [Subscribe user plan]</span><span class="fragment">
   where
     cancels = map Cancel 
-            . filter pred
+            . filter sameProduct
             . userSubscriptions
-    pred sub = subProduct sub == product
-    product = planProduct plan
-```
+    sameProduct sub = subProduct sub == product
+    product = planProduct plan</span>
+</code></pre></div>
 
 Note:
 
@@ -117,15 +116,13 @@ An interesting thing here is that we're returning an array or list of commands
 to execute.  In any case, it's now really easy to set this up and write tests:
 
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "subscribe" do
   it "should subscribe to an empty user" do
-    user, plan = double(), double()
-    user.stub(:subscriptions) { [] }
-    plan.stub(:product) { "foo" }
+    user = User.new(subscriptions: [])
+    plan = Plan.new(product: "foo")
 
-    commands = subscribe user, plan
+    commands = subscribe(user, plan)
 
     expect(commands)
       .to include(Subscribe.new(user, plan))
@@ -133,7 +130,7 @@ describe "subscribe" do
     expect(commands.length).to eq(1)
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -141,14 +138,8 @@ So our tests are pretty nice now. We don't have to worry about the details of
 plan subscription. Perhaps that's handled through Stripe or some other
 provider. We don't have to mock that API or anything.
 
-We *are* stubbing out objects here. In this sense, though, it is less that we
-are stubbing methods on global terms, and more that we are documenting the duck
-type that our method works with. Smaller duck types are easier to reuse and
-compose, so the less stubbing and test setup we have to do, the better.
 
-
-```haskell
--- Haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 describe "Subscribe" $ do
   it "should subscribe to an empty user" $ do
     let 
@@ -156,9 +147,9 @@ describe "Subscribe" $ do
       plan = fakePlan { planProduct = "foo" }
 
     subscribe user plan 
-      `shouldBe` 
+      \`shouldBe\` 
         [Subscribe user plan] 
-```
+</code></pre></div>
 
 Note:
 
@@ -167,94 +158,29 @@ declaration of our business logic. If we have arbitrary instances for our
 types, then we can do something similar:
 
 
-```haskell
--- Haskell
-describe "subscribe" $ do
-  prop "should subscribe an empty user" $ 
-    \user plan -> do
-    let user' = user { userSubscriptions = [] }
-
-    subscribe user' plan 
-      `shouldBe` 
-        [Subscribe user' plan]
-```
-
-Note:
-
-Since our commands and inputs are just dumb data, we can easily generate
-arbitrary values to get extra confidence that we're doing the right thing, as well as
-ignoring stuff that's incidental to what we're working on.
-
-
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "subscribe" do
   it "cancels a related plan" do
-    user, plan, old_sub = 3.times { double() }
-    old_sub.stub(:product) { "foo" }
-    plan.stub(:product) { "foo" }
-    user.stub(:subscriptions) { [old_sub] }
-    commands = subscribe user, plan
+    old_sub = Subscription.new(product: "foo")
+    user    = User.new(subscriptions: [old_sub])
+    plan    = Plan.new(product: "foo")
 
-    expect(commands)
-      .to include(Subscribe.new(user, plan))
-    expect(commands)
-      .to include(Cancel.new(old_sub))
-    expect(commands.length).to eq(2)
+    <span class="fragment">commands = subscribe(user, plan)</span>
+
+    <span class="fragment">expect(commands)
+      .to include(Subscribe.new(user, plan))</span>
+    <span class="fragment">expect(commands)
+      .to include(Cancel.new(old_sub))</span>
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-We can easily write tests for more complex business logic too. Here we're
-verifying that our subscribe method cancels old plans on the same product.  The
-test creates three stubs, makes the plan and subscription have the same
-product, and finally makes some assertions about what the stubs contain.
-
-
-# Discard Stubs, 
-
-# Acquire Values
-
-```ruby
-# Ruby
-User         = Value.new(:subscriptions)
-Subscription = Value.new(:product)
-Plan         = Value.new(:product, :amount)
-```
-
-Note:
-
-OK, so if you're really anti-stubbing, then you hopefully are just using dumb
-value classes. If you do that, then you don't need to stub anything out at all.
-Here's our minimal data model.
-
-After all, stubbing/mocking like this isn't easily generalizable to other
-languages and environments. Value objects, on the other hand, are really easy
-to implement in any language.
-
-
-```ruby
-describe "subscribe" do
-  it "cancels a related plan" do
-    sub  = Subscription.new("foo")
-    user = User.new([sub])
-    plan = Plan.new("foo", 123)
-    
-    commands = subscribe user, plan
-    
-    expect(commands)
-      .to include(Subscribe.new(user, plan))
-    expect(commands)
-      .to include(Cancel.new(sub))
-    expect(commands.length).to eq(2)
-  end
-end
-```
-
-Note:
-
-And here are our fancy new stub-free tests.
+We can easily write tests for more complex business logic too.
+Here we're going to verify that our subscribe method cancels old plans on the same product.
+The test initializes our data so that the new plan and the old subscription have the same product.
+Finally, we call our logic, and make some assertions about what the commands should contain.
 
 
 # Property Testing
@@ -269,7 +195,7 @@ We can describe properties of our business logic too. Then we can generate
 random values and assert that they hold.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "Add" do
   it "is commutative" do
     100.times do
@@ -285,14 +211,14 @@ describe "Add" do
     end
   end
 end 
-```
+</code></pre></div>
 
 Note:
 
-So here are the property tests for adding two numbers. It can kinda be tricky
-to express business logic in such a mathematical way. Fortunately,
-specifications for business logic often resemble these sorts of properties. We
-can recover a more natural language specification for these properties as:
+So here are the property tests for adding two numbers. 
+It can kinda be tricky to express business logic in such a mathematical way.
+Fortunately, specifications for business logic often resemble these sorts of properties.
+If we can write our requirements as clear specifications, then we can get some properties.
 
 
 # Properties:
@@ -306,17 +232,18 @@ Note:
 These are the properties that we want to express in our business logic. And, as it happens, we can convert these directly to property tests!
 
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "subscribe" do
   it "always subscribes to given plan" do
-    forall_users_and_plans do |user, plan|
-      expect(subscribe(user, plan))
-        .to include(Subscribe.new(user, plan))
+    forall_users do |user|
+      forall_plans do |plan|
+        <span class="fragment">expect(subscribe(user, plan))
+          .to include(Subscribe.new(user, plan))</span>
+      end
     end
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -327,14 +254,14 @@ generation of values can certainly cause the test to not assert what you think
 it asserts.
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 describe "subscribe" $ do
   prop "it always subscribes to a given plan" $ 
     \user plan ->
       subscribe user plan 
-        `shouldInclude`
+        \`shouldInclude\`
           Subscribe user plan
-```
+</code></pre></div>
 
 Note:
 
@@ -343,21 +270,22 @@ same correctness guarantees in Ruby and Haskell, you can tell that we're
 getting pretty close.
 
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "subscribe" do
   it "always cancels related plans" do
-    forall_users_and_plans do |user, plan|
-      cancellations = subs_on_product(
-        user.subscriptions, plan.product
-      ).map { |sub| Cancel.new sub }
-
-      expect(subscribe(user, plan))
-        .to include(*cancellations)
+    forall_users do |user| 
+      forall_plans do |plan|
+        <span class="fragment">cancellations = subs_on_product(
+          user.subscriptions, plan.product
+        ).map { |sub| Cancel.new(sub) }</span>
+  
+        <span class="fragment">expect(subscribe(user, plan))
+          .to include(*cancellations)</span>
+      end
     end
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -366,68 +294,26 @@ random user and plan, and then create the list of cancellations that we expect.
 Finally, we assert that all of the cancellations exist in the commands array.
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 describe "subscribe" $ do
   prop "it always cancels related plans" $ 
     \user plan -> do
       let 
         cancellations = 
-          map Cancel 
-            . subsOnProduct subs
-            $ planProduct plan
-        subs = userSubscriptions user
+          <span class="fragment">map Cancel 
+            . subsOnProduct (userSubscriptions user)
+            $ planProduct plan</span>
 
       subscribe user plan
-        `shouldSatisfy` 
-          (cancellations `isSubsetOf`)
-```
+        \`shouldSatisfy\` 
+          (\cmds -> cancellations \`isSubsetOf\` cmds)
+</code></pre></div>
 
 Note:
 
-And here we are in Haskell. This test works exactly the same logic as the above
-Ruby code.
-
-
-```ruby
-# Ruby
-describe "subscribe" do
-  it "doesn't cancel unrelated plans" do
-    forall_users_and_plans do |user, plan|
-      unrelated_cancels = subs_not_on_product(
-        user.subscriptions, plan.product
-      ).map { |s| Cancel.new(s) }
-
-      expect(subscribe(user, plan))
-        .to not_include(*unrelated_cancels)
-    end
-  end
-end
-```
-
-Note:
-
-Finally, we can test that we don't cancel any plans that aren't related to the
-one we're subscribing for.  This technique is crazy powerful for verifying the
-correctness of our business logic.
-
-
-```haskell
-describe "subscribe" $ do
-  prop "doesn't cancel unrelated plans" $ 
-    \user plan -> do
-      let 
-        unrelatedCancels =
-          map Cancel
-            . subsNotOnProduct subs
-            $ planProduct plan
-        subs = userSubscriptions user
-  
-      subscribe user plan 
-        `shouldSatisfy`
-          all (`notElem` unrelatedCancels)
-```
-
-Note:
+And here we are in Haskell.
+This test works exactly the same logic as the above Ruby code.
+I'm going to leave the "subscribing to a new plan should not cancel unrelated plans" logic to the audience. It's a fun exercise to play with.  
 
 I'm pretty pleased that our Ruby tests are about as good as our Haskell tests.
 Where a lot of functional programming techniques feel awkward and clumsy when

@@ -9,7 +9,7 @@ Ruby, too! How do we do that?
 
 # Distinct Commands
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 Subscribe = Value.new(:user, :plan)
 Cancel    = Value.new(:subscription)
 
@@ -20,7 +20,7 @@ commands = [
 ]
 
 # wat do?
-```
+</code></pre></div>
 
 Note:
 
@@ -29,10 +29,18 @@ know how to handle Cancel commands. Fortunately, it's real easy to compose two
 command interpreters.
 
 
+# Basic $\to$ Advanced
+
+Note:
+
+I think it's best to start simple, and only advance in power as you need it.
+Complexity makes things hard, and simplicity is sometimes the right answer, even when it's verbose or repetitive.
+
+
 # Composing Interpreters
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class StripeCancel
   def call(command)
     Stripe::Subscription.cancel(
@@ -48,34 +56,40 @@ class StripeSubscribe
     )
   end
 end
-```
+</code></pre></div>
 
 Note:
 
 Here are our cancel and subscribe command interpreters. Super basic, no logic,
-easy to read, test, understand, etc. Now let's compose them:
+easy to read, test, understand, etc.
 
 
 # For want of a sum...
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 data SubscribeCommand
   = Subscribe User Plan
   | Cancel Subscription
 
 stripeInterpreter :: SubscribeCommand -> IO ()
-stripeInterpreter (Subscribe user plan) = ...
-stripeInterpreter (Cancel subscription) = ...
-```
+stripeInterpreter command = 
+  case command of
+    Subscribe user plan ->
+      Stripe.subscribe user plan
+    Cancel subscription ->
+      Stripe.cancel subscription
+</code></pre></div>
 
 Note:
 
-Haskell's sum types make it easy to concretely encode this.  We just provide a
-sum type with all the constructors of our command, and then we write a function
-accepting that type as an argument. If we cover all the cases, then we're done.
+Haskell's sum types make it easy to concretely encode this.
+We just provide a sum type with all the constructors of our command, and then we write a function accepting that type as an argument.
+If we cover all the cases, then we're done.
+
+I bet we can get something similar with Ruby.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class CancelOrSubscribe
   def call(command)
     case command
@@ -88,20 +102,18 @@ class CancelOrSubscribe
     end
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-Ruby lets you use case..when syntax against the classes we're comparing
-against.  So when the command is a Subscribe (or a subclass of Subscribe),
-we'll use the Stripe Subscriber. When it's Cancel, we'll call the stripe
-canceller. Otherwise we throw an error. This looks a lot like the Haskell code
--- we know all of the possible commands while writing the code, we case on the
-constructor for the command, and we delegate to that interpreter's
-implementation.
+Ruby lets you use case..when syntax against the classes we're comparing against.
+So when the command is a Subscribe (or a subclass of Subscribe), we'll use the Stripe Subscriber.
+When it's Cancel, we'll call the stripe canceller.
+Otherwise we throw an error.
+This looks a lot like the Haskell code -- we know all of the possible commands while writing the code, we case on the constructor for the command, and we delegate to that interpreter's implementation.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 interpreter = CancelOrSubscribe.new
 
 commands = [
@@ -113,7 +125,7 @@ commands = [
 commands.map do |command|
   interpreter.call command
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -121,7 +133,7 @@ Here's how we solve the problem of multiple classes in our command array.
 Now that we have a *composed* interpreter, it's easy to do this.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class CancelOrSubscribe
   def initialize(canceller, subscriber)
     @canceller  = canceller
@@ -137,7 +149,7 @@ class CancelOrSubscribe
     end
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -145,27 +157,28 @@ We can make this more generic by passing the specific canceller and subscriber
 in.
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 -- | Dependency Injection! Behold the 
 -- enterprisey glory of this function.
 genericCancelOrSubscribe 
   :: (SubscribeCommand -> IO ()) 
   -> SubscribeCommand -> IO ()
 genericCancelOrSubscribe action command = 
-  action command
--- or, simply,
+  <span class="fragment">action command</span>
+<span class="fragment">-- or, simply,
 genericCancelOrSubscribe = 
-  id
-```
+  id</span>
+</code></pre></div>
 
 Note:
 
 This sort of dependency injection doesn't make all that much sense in Haskell, though.
+Since almost everything is a simple function or a simple type, we can just write directly against it.
 
 
 # Interpeter Duck
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 stripe_manager = CancelOrSubscribe.new(
   StripeCanceller.new, StripeSubscriber.new
 )
@@ -173,62 +186,59 @@ stripe_manager = CancelOrSubscribe.new(
 internal_manager = CancelOrSubscribe.new(
   InternalCanceller.new, InternalSubscriber.new
 )
-```
+</code></pre></div>
 
 Note:
 
 Now, it's pretty easy to construct interpreters for sets of commands.
-However, I'm still not entirely happy with this. I want to describe a generic
-structure that accepts a mapping of command types to their handlers.
+However, I'm still not entirely happy with this.
+I want to describe a generic structure that accepts a mapping of command types to their handlers.
+That way, we won't have to rewrite the same machinery for every composition of commands.
 
 
-### insert bird law joke here
-
-
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 stripe_manager = ComposeInterpreters.new(
   {
-    Cancel => StripeCanceller.new,
+    Cancel    => StripeCanceller.new,
     Subscribe => StripeSubscriber.new
   }
 )
-```
+</code></pre></div>
 
 Note:
 
-Now, this is easy! We just pass a simple hash in, and our composition is done.
-This is actually a little difficult to accomplish in Haskell -- if we fix the
-type of commands in advance, then we can make a simple sum type, and just
-interpret that normally.  However, if we want to be able to flexibly combine
-commands and interpreters (of differing types), then we're going to have a hard
-time. We'd have to dig into some interesting type class and type programming
-stuff.
+This is the API I want to have.
+This structure represents a mapping, or dictionary, where the keys in the dictionary are the command classes, and the values they point to are the handlers for that class.
 
 Let's see how this can be implemented, in Ruby at least.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class ComposeInterpreters
+  <span class="fragment">attr_reader :handlers 
+
   def initialize(handlers)
     @handlers = handlers
-  end
+  end</span>
 
-  def call(command)
-    handler = @handlers[command.class]
+  <span class="fragment">def call(command)
+    <span class="fragment">handler = handlers[command.class]
     if handler
-      handler.call(command)
-    else 
+      handler.call(command)</span>
+    <span class="fragment">else 
       raise UnkownCommandError.new(command)
-    end
-  end
+    end</span>
+  end</span>
 end
-```
+</code></pre></div>
 
 Note:
 
-The implementation is even shorter. We dig into the dictionary we're passed
-with the class of the command that we're given, and we call the handler with
-the command if it's present. Otherwise we throw a runtime error. 
+First, we'll need to accept our dictionary from commands to interpreters.
+
+When we implement call, the first thing we'll need to do is dig into the dictionary of handlers we had  with the class of the command that we're given.
+If that command handler is present, then we call the handler with that command.
+Otherwise, we throw a runtime error.
 
 
 # Composing 
@@ -240,125 +250,40 @@ Note:
 We can also easily compose these new composed handlers.
 
 
-```ruby
-stripe_handlers = { 
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
+class ComposeInterpreters
+  def merge(other)
+    @handlers = handlers.merge(other.handlers)    
+  end
+end
+
+<span class="fragment">subscription_handlers = ComposeInterpreters.new({ 
   Cancel    => StripeCanceller.new,
   Subscribe => StripeSubscriber.new 
-}
-user_handlers = {
+})
+
+user_handlers = ComposeInterpreters.new({
   Delete => StripeUserDelete.new,
   Create => StripeUserCreate.new
-}
+})</span>
 
-stripe_manager = ComposeInterpreters.new(
-  stripe_handlers.merge(user_handlers)
-)
-```
-
-Note:
-
-Here we have two hashes of handlers. One handles subscriptions, with a canceller
-and a subscriber. The other handles users, with a delete and create command. To
-compose them, we can just use Ruby's hash merge method. 
-
-We can consider this a *widening* of the original command handler.
-
-Hash merge forms a monoid, so the widening of a command interpreter *also*
-forms a monoid.  These things are everywhere, even in your Ruby or PHP code.
-
-
-# Another kind of composition?
+<span class="fragment">stripe_manager = 
+  user_handlers.merge(subscription_handlers)</span>
+</code></pre></div>
 
 Note:
 
-This covers a way to extend interpreters to handle multiple distinct commands.
-What if we also want to assign multiple handlers for a command? Suppose we want to additionally *log* every subscription and cancellation that happens.
+We'll add a merge method to composed handler class.
+This lets us merge two ComposedInterpreters.
+It just delegates to the internal Ruby hash merge method.
 
+Here we have two hashes of handlers.
+One handles subscriptions, with a canceller and a subscriber.
+The other handles users, with a delete and create command.
 
-# A New Interpreter
-
-```ruby
-class CommandLogger
-  def call(command)
-    puts command
-  end
-end
-```
-
-Note:
-
-How can we combine our handlers? We extend our handlers to require arrays of handlers, not just a single one.
-
-
-```ruby
-class ComposeInterpreters
-  def initialize(interpreters); @interpreters ...
-
-  def call(command)
-    handler = @interpreters[command.class]
-
-    unless handler 
-      raise UnkownCommandError.new(command) 
-    end
-     
-    handler.map do |interpreter|
-      interpreter.call(command)
-    end
-  end
-end
-```
-
-Note:
-
-This implementation of the ComposeInterpeters class expects the various
-handlers to be an *array* of interpreters. The return value that we get from
-this composed interpreter is then an array of the results of calling the
-various handlers.
-
-
-## Monoid of Monoids
-
-```ruby
-def compose_handlers(commands_1, commands_2)
-  commands_1.merge(commands_2) do |_, c_1, c_2|
-    c_1 + c_2
-  end
-end
-```
-
-Note:
-
-Now, when we're composing commands, we can still do hash merge, but we'll want
-to control how merging occurs. By default, merging hashes in Ruby considers a
-collision to be an update. Instead, we want it to be list append.
-
-With this change, we can easily merge our logging command with our other commands.
-
-
-#### so convenient
-
-```ruby
-def with_logging(handlers) 
-  handlers.reduce(Hash.new) do |acc, x|
-    klass, handler = x
-    acc.merge(
-      { klass => handler + [Logger.new] }
-    )
-  end
-end
-
-stripe_handler = with_logging({
-  Cancel    => [StripeCanceller.new],
-  Subscribe => [StripeSubscriber.new]
-})
-```
-
-### wow
-
-Note:
-
-Now we can easily enhance our command handlers with new functionality. Since
-these are just dumb data structures, it's prety easy!
+Finally, we compose these two objects.
+Hash merge forms a monoid, so the widening of a command interpreter *also* forms a monoid.
+These things are everywhere, even in your Ruby or PHP code.
 
 
 # Haskellize?
@@ -387,69 +312,29 @@ programmer, you get *far* more utility out of using the least powerful solution
 to your problem.
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 data SubscribeCommand
   = Subscribe User Plan
   | Cancel Subscription
-  | CreateUser Name (Maybe Card) -- new!
-  | DeleteUser User              -- new!
+  <span class="fragment">| CreateUser Name (Maybe Card) -- new!
+  | DeleteUser User              -- new!</span>
 
 stripeInterpreter
   :: SubscribeCommand -> IO ()
 stripeInterpreter command = case command of
   Subscribe user plan -> ...
   Cancel sub -> ...
-  -- we get compile warnings if we forget these!
+  <span class="fragment">-- COMPILE WARNING: Incomplete pattern match!</span>
+  <span class="fragment">-- we get compile warnings if we forget these!
   CreateUser name maybeCard -> ...
-  DeleteUser user -> ...
-```
+  DeleteUser user -> ...</span>
+</code></pre></div>
 
 Note:
 
+So here's our original code.
+Aaaand, now we've exended it with two new command types for adding users!
 When we add these new commands to our sum type, we get compile warnings if we
 fail to handle them in any use case. And *that's* awesome.
 
-
-# Composing Handlers?
-
-```haskell
-type SubscribeHandler 
-  = SubscribeCommand -> IO ()
-
-runManyHandlers 
-  :: [SubscribeHandler] 
-  -> SubscribeCommand 
-  -> IO ()
-runManyHandlers handlers command = 
-  sequence handlers command
-```
-
-Note:
-
-We can still compose multiple handlers. Given a list of SubscribeHandlers and a
-single SubscribeCommand, we can use the sequence function to run each handler
-on the command.
-
-
-```haskell
--- Explicit, specialized:
-runManyHandlers
-  :: [SubscribeCommand -> IO ()]
-  -> [SubscribeCommand]
-  -> IO ()
-runManyHandlers handlers commands =
-  traverse_ (sequence handlers) commands
-
--- Generalized:
-runManyHandlers
-  :: (Foldable t, Traversable f, Applicative f)
-  => f (a -> b)
-  -> t a
-  -> f ()
-runManyHandlers = traverse_ . sequence
-```
-
-Note:
-
-Running multiple handlers over multiple commands is, in truth, a pretty
-simple operation. It's the composition of two functions!
+This doesn't end up being *that* much boiler plate, in practice.

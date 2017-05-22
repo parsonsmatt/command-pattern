@@ -1,16 +1,16 @@
-# Using Commands
+# Interpreting Commands
 
 Note:
 
-Now that we've got all these commands, how do we actually use them? There are
-a number of ways we can do this, in increasing complexity/power. As with most
-things in software development, it's best to ask for as little power as you need.
+Now that we've got all these commands, how do we actually use them?
+There are a number of ways we can do this, in increasing complexity/power.
+As with most things in software development, it's best to ask for as little power as you need.
 Shooting yourself in the foot hurts a lot less if you only have a water gun.
 
 
 # Command Interpreter
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class FooResultInterpreter
   def call(command)
     FooResult.insert(
@@ -18,20 +18,21 @@ class FooResultInterpreter
     )
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-For each command, you implement an interpreter. Here's a basic interpreter for the FooResult class.
+For each command, you implement at least one interpreter.
+Here's a basic interpreter for the FooResult class.
 
 
 # Command Interpreter
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 fooResultInterpreter :: InsertFooResult -> DB ()
 fooResultInterpreter (InsertFooResult x y z) = 
     insert (FooResult x y z) 
-```
+</code></pre></div>
 
 Note:
 
@@ -40,7 +41,7 @@ Command interpreters in Haskell are just functions which convert a *command valu
 
 # Single Command
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 value, action = Foo.new.my_func(1,2,3)
 
 InsertFooResultInterpreter.new.call(action)
@@ -48,7 +49,7 @@ InsertFooResultInterpreter.new.call(action)
 TestInsertFooResultInterpreter.new.call(action)
 # or,
 RedisFooResult.new.call(action)
-```
+</code></pre></div>
 
 Note:
 
@@ -57,7 +58,7 @@ and you pass it to the interpreter of your choice. You can easily define many
 different varieties of interpreters for a given command.
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 let (value, action) = Foo.myFunc 1 2 3
 
 insertFooResult     
@@ -68,7 +69,7 @@ testInsertFooResult
 
 redisFooResult      
   :: InsertFooResult -> Redis ()
-```
+</code></pre></div>
 
 
 # Back to Billing Logic
@@ -79,7 +80,7 @@ OK, that's great, but let's get back to the important stuff -- getting money
 from people!
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class StripeSubscriber
   def call(command)
     Stripe::Subscription.create(
@@ -95,7 +96,7 @@ class InternalSubscriber
     )
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -105,14 +106,22 @@ Likewise, since they have the same duck type, we can pass any old instance of a
 subscriber interpreter to a class.
 
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
+type SubscribeInterpreter m = 
+  SubscribeCommand -> m ()
+
 stripeSubscriber   
-  :: SubscribeCommand -> IO ()
+  :: SubcribeInterpreter IO
 internalSubscriber 
-  :: SubscribeCommand -> IO ()
+  :: SubscribeInterpreter IO
 testSubscriber     
-  :: SubscribeCommand -> State User ()
-```
+  :: SubscribeInterpreter (State User)
+</code></pre></div>
+
+Note:
+
+The Haskell shape, or interface, is going to be parameterized over the kinds of effects it can do.
+A Stripe subscriber or internal billing system is going to operate in IO, while a test interpreter might work in a local in memory state containing a User.
 
 
 # Running Multiple Commands
@@ -125,8 +134,8 @@ simple values, we can use simple functions to chain commands. We'll start with
 a simple case: multiple of the same command.
 
 
-```ruby
-
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
+<br/>
 commands = [
   Subscribe.new(x, y), 
   Subscribe.new(z, a),
@@ -136,7 +145,7 @@ commands = [
 # answer?
 # wat do
 # halp
-```
+</code></pre></div>
 
 Note:
 
@@ -144,8 +153,9 @@ Ok, so we've got an array full of Subscribe commands. And we want to actually ex
 Does anyone have a suggestion on how to do this?
 
 
-```ruby
-interpreter = StripeSubscriber.new
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
+interpeter = StripeSubscriber.new
+
 commands = [
   Subscribe.new(x, y), 
   Subscribe.new(z, a),
@@ -155,37 +165,35 @@ commands = [
 commands.map do |command| 
   interpreter.call command
 end
-```
+</code></pre></div>
 
 Note:
 
-We can simply iterate over the commands, and for each command, call it through
-the interpreter. 
+We can simply map over the commands, and for each command, call it through the interpreter. 
 
 
 # Functor
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 executeCommands
   :: [SubscribeCommand]
-  -> (SubscribeCommand -> IO a)
-  -> [IO a]
+  -> <span class="fragment">(SubscribeCommand -> IO a)</span>
+  -> <span class="fragment">[IO a]</span> <span class="fragment">-- Not the \`IO [a]\` that we want :(</span>
 executeCommands commands interpreter =
   map interpreter commands
-```
+</code></pre></div>
 
 Note:
 
-Well, unfortunately `map` just doesn't quite handle it like we'd want to. In
-Ruby, this would iterate over each item in the array, execute the callback, and
-return the array of all results. In Haskell, what we get is a list of IO
-operations -- nothing actually happens here, we just prepare the instructions
-to be executed later. We're looking for something a little more powerful.
+Well, unfortunately `map` just doesn't quite handle it like we'd want to.
+In Ruby, this would iterate over each item in the array, execute the callback, and return the array of all results.
+In Haskell, what we get is a list of IO operations -- nothing actually happens here, we just prepare the instructions to be executed later.
+We're looking for something a little more powerful.
 
 
 # Traversable
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 executeCommands
   :: [SubscribeCommand]
   -> (SubscribeCommand -> IO a)
@@ -193,27 +201,29 @@ executeCommands
 executeCommands commands interpreter =
   traverse interpreter commands
 
-executeCommands' 
+<span class="fragment">executeCommands' 
   :: (Traversable t, Applicative f)
   => t SubscribeCommand
   -> (SubscribeCommand -> f a)
   -> f (t a)
-executeCommands' = for
-```
+executeCommands' = for</span>
+</code></pre></div>
 
 Note:
 
-In Haskell, if you want to iterate over a collection along with some effect,
-then you want to use Traversable. A Haskell traversal is like an effectful map.
+In Haskell, if you want to iterate over a collection along with some effect, then you want to use Traversable.
+A Haskell traversal is like an effectful map, or what you're used to seeing in non-pure languages.
+
+We actually have a much more general type signature of for -- it's really general and highly useful!
 
 
-# Dumb Data
+# Simple Data
 
 ## Is Easy <!-- .element: class="fragment" -->
 
 Note:
 
-Commands are just dumb data. Since they're dumb data, we can easily stuff them
+Commands are just simple data. Since they're simple data, we can easily stuff them
 in data structures are do interesting things to them. While the above example
 just used an array, you could easily have a lazy list of commands, or a binary
 tree, or a dictionary, or whatever.
@@ -232,19 +242,22 @@ The additional data separation allows us to act with more knowledge about what
 it is we're doing.
 
 
-# InsertFooResult
-
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 commands = [
-  InsertFooResult.new(1, 2, 3),
-  InsertFooResult.new(4, 5, 6),
-  InsertFooResult.new(7, 8, 9)
+  InsertFooResult.new(1, 2, 3),        <span class="fragment"># one insert...</span>
+  DoSomeOtherThing.new("hello world"),
+  InsertFooResult.new(4, 5, 6),        <span class="fragment"># two inserts...</span>
+  InsertFooResult.new(7, 8, 9),        <span class="fragment"># three inserts...</span>
+  LaunchTheMissiles.new(Time.now)     
 ]
 
-commands.map { |cmd| interpreter.call cmd }
-```
+commands.map { |cmd| interpreter.call(cmd) }
+</code></pre></div>
 
 Note:
+
+Now, we've got this set of commands we want to handle.
+We're inserting a bunch of rows into the database and doing some other stuff.
 
 Here's our naive logic. It *works*. But it's inefficient! We issue three SQL
 queries here, when we could save a tremendous amount of time by doing a bulk
@@ -253,7 +266,7 @@ insert.
 Let's optimize this.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 def optimize(commands)
   inserts, rest = commands.partition do |command|
     command === InsertFooResult
@@ -261,7 +274,7 @@ def optimize(commands)
 
   rest.push(BulkInsert.new(inserts))
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -269,31 +282,3 @@ Ok, so here we're going to partition the commands into two lists; the first is
 one where the command's class is an InsertFooResult. The second list is all of
 the other commands. We return the list of non-insert commands with a BulkInsert
 command appended to the end.
-
-
-```haskell
-data FooResult 
-  = InsertFooResult FooResult
-  | BulkFooResult [FooResult]
-
-isInsert :: FooResult -> Bool
-isInsert x = case x of
-  InsertFooResult _ -> True
-  _ ->                 False
-
-optimize :: [FooResult] -> [FooResult]
-optimize commands = 
-    rest ++ [BulkFooResult (map unwrap inserts)]
-  where
-    (inserts, rest) = partition isInsert commands
-    unwrap (InsertFooResult x) = x
-```
-
-Note:
-
-Here's the Haskell variant of the above Ruby code. We have to specify what the 
-possibilities of the command are, but we can easily provide the optimizations.
-
-This partial function kind of sucks, so don't actually use this in the real
-life. I don't recommen this exact code structure, but I unfortunately have to
-fit stuff on slides.

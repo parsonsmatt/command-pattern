@@ -1,16 +1,24 @@
-# Resolving Input Effects
+# Input Effects
+
+# ->
+
+# Input Value
+
+Note:
+
+Maybe we can turn our effects into values?
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 # Ruby
 class Foo
   def my_func(x, y)         
     z = User.all.length
-    FooResult.insert x, y, z
+    FooResult.insert(x, y, z)
     x + y + z                
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -29,136 +37,106 @@ modify, reuse, etc.
 <!-- .element: class="fragment" -->
 
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
+# Old:
 class Foo
-  def my_func(x, y, users)
-    z = users.length
+  def my_func(x, y)         
+    z = <b><i>User.all.length</i></b>       # effects :(
+    FooResult.insert(x, y, z)
+    x + y + z                
+  end
+end
+
+# New:
+class Foo
+  def my_func(x, y, z)
     FooResult.insert(x, y, z)
     x + y + z
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-Fortunately, resolving input effects is super easy. You identify the input
-effects, and then take them as a parameter. In this example, we've stopped
-talking to the database, and now just take the object as a parameter. The tests
-just got *way* simpler.
+In this example, we've stopped talking to the database, and now just take the
+length of all the users as a parameter.
 
 
-```haskell
--- Haskell
-myFunc x y users = do
-    let z = length users
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
+myFunc :: Int -> Int -> Int -> IO Int
+myFunc x y z = do
     insert (FooResult x y z)
     pure (x + y + z)
-```
+</code></pre></div>
 
 Note:
 
 And here's the Haskell. It's pretty much exactly what you'd expect.
+Let's look at our testing story now.
 
 
 # Testing:
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe Foo do
   it "adds stuff" do
-    x, y, arr = 1, 2, [1,2,3]
+    x, y, z = 1, 2, 3
 
     allow(FooResult)
       .to receive(:insert)
-      .with(x, y, arr.length)
+      .with(x, y, z)
 
-    expect(Foo.new.my_func(x, y, arr)).to eq 6
+    expect(Foo.new.my_func(x, y, z)).to eq 6
   end
 end
-```
+</code></pre></div>
 
 Note:
 
 Three lines of test code. One of those is just initialize values. Nice!
 
 
-```haskell
--- Haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 describe "Foo" $ do
-  prop "adds stuff" $ \arr x y ->
-    Foo.fooResult x y arr 
-      `shouldReturn`
-        x + y + length arr
-```
+  prop "adds stuff" $ \x y z ->
+    Foo.fooResult x y z 
+      \`shouldReturn\`
+        x + y + z
+</code></pre></div>
 
 Note:
 
 The Haskell version even allows us to turn this into a QuickCheck property test
-now, which gives us way more confidence on the correctness. of this
-implementation.
-
-
-# Draw the input line?
-
-
-Why not...?
-
-```ruby
-# Ruby
-class Foo
-  def my_func(x, y, z)
-    FooResult.insert x, y, z
-    x + y + z
-  end
-end
-
-describe Foo do
-  it "uhh" do
-    x, y, z = 1, 2, 3
-    allow(FooResult)
-      .to receive(:insert).with(x, y, z)
-    expect(Foo.new.my_func(x, y, z)).to eq 6
-  end
-end
-```
-
-Note:
-
-You might know about the law of Demeter, which is roughly is described as: the
-fewer expectations you have on your inputs, the easier your code is to deal
-with, and the less likely it is to be fragile. In this example, we just pass in
-the length of the users collection directly, removing that dependency entirely.
-
-The code and the test fit on the same slide now! That's new.
+now, which gives us way more confidence on the correctness of this
+implementation. Here, we're generating a bunch of random values for x, y, and
+arr, and we're asserting that the property holds for these values.
 
 
 # Input effects are ezpz
 
-```ruby
-# Ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 def should_bill?(user_id)
   user = User.find(user_id)
   user.last_billing_date <= Time.now - 30.days
 end
-```
+</code></pre></div>
 
 Note:
 
-It's easy to resolve input effects. You just take the value you'd extract as a
-parameter.  Does this function have any input effects? If so, what are they?
+Pop quiz!  
+Does this function have any input effects? If so, what are they?
 
 
-```haskell
--- Haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
+shouldBill :: UserId -> IO Bool
 shouldBill userId = do
   user <- Sql.get userId
   time <- getCurrentTime
   pure $
     lastBillingDate user 
-      `isBefore` 
+      \`isBefore\` 
         time .-^ days 30
-```
+</code></pre></div>
 
 Note:
 

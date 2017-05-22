@@ -32,11 +32,58 @@ html, body, .reveal div, .reveal span, .reveal applet, .reveal object, .reveal i
 	vertical-align: baseline;
 }
 
+.reveal code {
+    font-size: 1em;
+}
+
 .reveal article, .reveal aside, .reveal details, .reveal figcaption, .reveal figure,
 .reveal footer, .reveal header, .reveal hgroup, .reveal menu, .reveal nav, .reveal section {
 	display: block;
 }
 
+img#plain {
+    border: 0;
+    background: 0;
+    box-shadow: none;
+}
+
+img#ruby-logo {
+    border: 0;
+    background: 0;
+    box-shadow: none;
+
+    height: 30rem;
+    // width: 33%;
+}
+
+img#haskell-logo {
+    border: 0;
+    background: 0;
+    box-shadow: none;
+
+    height: 30rem; // height: 33%;
+    // width: 33%;
+}
+
+div#lang-logo {
+    position: relative;
+}
+
+#lang-logo #lang {
+    position: absolute;
+    top: -5rem;
+    right: -5rem;
+}
+
+img#lang {
+    border: 0;
+    background: 0;
+    box-shadow: none;
+    padding: 10px;
+
+    height: 10rem;
+    z-index: 10;
+}
 
 /*********************************************
  * GLOBAL STYLES

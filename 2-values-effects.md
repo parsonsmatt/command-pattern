@@ -6,17 +6,14 @@
 
 Note:
 
-So, when we talk about "doing stuff" in computer programming, we have a bunch
-of different ways of organizing it. If you're writing in OOP, you'll start by
-making a class, and then defining some methods on it. In functional
-programming, you start by defining a data type and writing functions that
-operate on it. In imperative languages, you define procedures that run a
-sequence of commands on the underlying machine.
+So, when we talk about "doing stuff" in computer programming, we have a bunch of different ways of organizing it. 
+Typically, we break functionality up into small pieces -- we call them methods in OOP land, and functions in fantasyland.
 
-
-# Values and Effects
 
 # Input and Output
+
+# Values and Effects
+<!-- .element: class="fragment" -->
 
 Note:
 
@@ -24,20 +21,29 @@ Let's talk about how we *use* methods and functions. Generally, we can talk
 about a function in terms of the inputs and outputs that it has. We can also
 talk about a function in terms of the values and effects that it deals with.
 
+
+![](1000px-Ruby_logo.svg.png) <!-- .element: id="ruby-logo", style: "size: 100" --> ![](haskell_logo.svg) <!-- .element: id="haskell-logo" -->
+
+<3
+
+Note:
+
 The code in this talk will be a combination of Ruby and Haskell.
+Ruby's a dynamically typed object oriented programming language, and Haskell is a statically typed pure functional programming language.
+We'll get to see how the same technique works out pretty great in both languages!
 
 
 # Values
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class Foo
-  def my_func(x, y)          # value!
+  def my_func(x, y)            # value!
     z = User.all.length
     FooResult.insert(x, y, z)
-    x + y + z                # value!
+    x + y + z                  # value!
   end
 end
-```
+</code></pre></div>
 
 * Input arguments
 * Return value
@@ -45,13 +51,13 @@ end
 Note:
 
 The *values* in this code snippet are the simple, easy bits. We pass in the
-numbers x and y, which are both values. We return x + y + z, which is a simple
+numbers x and y, which are both values. We return x + y + z, which is also a simple
 value.
 
 
 # Effects
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class Foo
   def my_func(x, y)
     z = User.all.length       # effect!
@@ -59,7 +65,7 @@ class Foo
     x + y + z
   end
 end
-```
+</code></pre></div>
 
 * Input effects
 * Output effects
@@ -72,14 +78,15 @@ and inserting a new result into the database.
 
 # Haskell
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 module Foo where
 
+myFunc :: Int -> Int -> DB Int
 myFunc x y = do
     z <- fmap length selectUsers
     insert (FooResult x y z)
     pure (x + y + z)
-```
+</code></pre></div>
 
 Note:
 
@@ -89,10 +96,9 @@ read the entire call graph of the code you're talking about. Haskell tracks it
 in the type, which makes these refactors really easy.
 
 
-# Values and Effects
+# Values are *explicit*
 
-
-![](box.png)
+# Effects are *implicit*
 
 Note:
 
@@ -102,41 +108,34 @@ Input effects are the things that provide information to the function that we
 don't explicitly pass in. Output effects are the things that happen as a result
 of calling the method, that aren't explicitly part of the return value.
 
-
-# Values are *explicit*
-
-# Effects are *implicit*
-
-Note:
-
 So values are explicit. Testing values is easy, and testing is an OK
 approximation of good software. Effects are implicit. And testing effects is difficult.
 
 
 # Testing Values:
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 def add(x, y)
   x + y
 end
-```
 
-```ruby
+# In some Spec.rb file, 
+
 describe "add" do
   it "should add" do
     expect(add(2, 3)).to eq 5
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-So, here's the super simple add function. Testing it is stupid easy. We just
+So, here's the super simple add function. Testing it is super easy. We just
 pass in some input values, and make assertions about the output value. This
 test is pretty silly, but it's easy to come up with more advanced test cases.
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "Add" do
   it "is commutative" do
     100.times do
@@ -152,7 +151,7 @@ describe "Add" do
     end
   end
 end 
-```
+</code></pre></div>
 
 Note:
 
@@ -169,39 +168,49 @@ is important.
 
 # In Haskell, too!
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 add x y = x + y
 
 spec = 
   describe "add" $ do
     it "should add numbers" $ do
-      add 2 3 `shouldBe` 5    
+      add 2 3 \`shouldBe\` 5    
     prop "is commutative" $ \x y -> do
-      add x y `shouldBe` add y x
+      add x y \`shouldBe\` add y x
     prop "is associative" $ \x y z -> do
-      add x (add y z) `shouldBe` add (add x y) z
-```
+      add x (add y z) \`shouldBe\` add (add x y) z
+</code></pre></div>
 
 Note:
 
 The tests we have for the Ruby and Haskell are just about the same! It's a
-little easier to write the tests in HAskell, but we've got basically the same
+little easier to write the tests in Haskell, but we've got basically the same
 thing going on.
 
 
 # Testing Effects:
 
+### dun
+<!-- .element: class="fragment" -->
+
+### dun
+<!-- .element: class="fragment" -->
+### dun
+<!-- .element: class="fragment" -->
+
 Note:
 
-So you're going to read the code on these slides and you might wince. I'm gonna
-be calling out some methods of testing effects that we've all done
-(probably?!). So if you are feeling personally offended, just know that I've
-done all of these too, and maybe I can help find a way out!
+So let's talk about testing effects. (dun dun dun)
+
+Testing effects is a lot harder. And sometimes, it can get really messy.
+So let's go through some of the ways that we might test effects. We'll start
+out kinda messy and wrong, and we'll evaluate some of the solutions that are
+common today.
 
 
 # Testing Effects:
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class Foo
   def my_func(x, y)
     z = User.all.length       # effect!
@@ -209,7 +218,7 @@ class Foo
     x + y + z
   end
 end
-```
+</code></pre></div>
 
 Note:
 
@@ -219,28 +228,31 @@ and what happens when we do FooResult. I'm going to evolve testing this example.
 
 # Wrong
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "Foo#my_func" do
   it "adds inputs" do
     expect(Foo.new.my_func(1,2)).to eq(3)
   end
 end
-```
+</code></pre></div>
 
 Note:
 
 So this attempt is flat out wrong. However, on an uninitialized database with 0
 users, it'll return the right answer. This is a *fragile* test, even though it
-may pass sometimes.
+may pass sometimes. We also don't capture the effect of creating a FooResult in
+the database.
 
 
 # Wrong Haskell
 
-```haskell
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 describe "Foo.myFunc" $ do
   it "adds inputs" $ do
-    Foo.myFunc 1 2 `shouldReturn` 3
-```
+    Foo.myFunc 1 2 
+      \`shouldReturn\` 
+        3
+</code></pre></div>
 
 Note:
 
@@ -252,7 +264,7 @@ we are not tracking in the type, the type system can' help us!
 
 # Slow
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "Foo#my_func" do
   it "adds inputs" do
     User.insert(name: "Matt", age: 28)
@@ -262,14 +274,15 @@ describe "Foo#my_func" do
     expect(x).to_not be_nil
   end
 end
-```
+</code></pre></div>
 
 Note:
 
 So this isn't wrong anymore. However, the test relies on the database state, and
 has to do five SQL queries in order to verify the code. These tests are
 monstrously slow and will kill your TDD cycle, in addition to being fragile and
-annoying to write.
+annoying to write. Now you need to *also* write a bunch of database cleanup and
+state management code for your tests. Gross.
 
 
 # Stubs!
@@ -280,30 +293,27 @@ The next "level up" that often happens is to take advantage of stubs or mocks.
 Let's look at that real quick:
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "Foo" do
   it "adds some numbers" do
     x, y, z = 3, 4, 3
-
-    expect(User)
+    <span class="fragment">expect(User)
       .to receive(:all)
-      .and_return([1,2,3])
-
-    allow(FooResult)
-      .to receive(:insert).with(x, y, z)
-
-    expect(Foo.new.my_func(x, y))
-      .to eq(x + y + z)
+      .and_return([1,2,3])</span>
+    <span class="fragment">allow(FooResult)
+      .to receive(:insert).with(x, y, z)</span>
+    <span class="fragment">expect(Foo.new.my_func(x, y))
+      .to eq(x + y + z)</span>
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-This test is a lot nicer. We need to stub out the User.all method to ensure it
-returns a value that suits our expectation. We also need to stub out the
-FooResult class and verify that it receives the arguments we expect. Finally, we
-can do some assertions on the actual values involved.
+This test is a lot nicer. We start with some initial values we'll use. 
+We need to stub out the User.all method to ensure it returns a value that suits our expectation.
+We also need to stub out the FooResult class and verify that it receives the arguments we expect.
+Finally, we can do some assertions on the actual values involved.
 
 This kinda sucks! You can imagine extending this to more complex things, but it
 gets even uglier, pretty quickly. Furthermore, stubs and mocks are pretty
@@ -318,9 +328,9 @@ So stubbing global terms like this in Haskell? It's not possible. Sorry, or
 not, I guess, depending on whether you find the previous code disgusting or
 pleasantly concise.
 
-I know that someone probably has some awesome hack to make top level spies or
-stubbing work. I don't... really want to hear about it. Sorry! I can't be
-trusted with that kind of dark magic.
+This is also not possible, or extremely difficult/annoying, in other langauges.
+So, rather than sticking with something that only works with Ruby, lets find
+something that we can use in most languages we might want to use.
 
 
 # Dependency Injection?
@@ -332,12 +342,12 @@ stubbing out random global names. You define an interface (or duck type) for
 what your objects need and pass them in your object initializer
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 class Foo
-  def initialize(user, foo_result)
+  <span class="fragment">def initialize(user, foo_result)
     @user = user
     @foo_result = foo_result
-  end
+  end</span>
 
   def my_func(x, y)
     z = @user.all.length        # effect!
@@ -346,9 +356,14 @@ class Foo
     result
   end
 end
-```
+</code></pre></div>
 
 Note:
+
+So here, instead of referring to the global term User and FooResult, we refer
+to instance variables.
+
+We provide these values to our class on initialization.
 
 Dependency injection can be used to make testing like this a little easier,
 especially in languages that aren't as flexible as Ruby (like Haskell). Instead
@@ -359,128 +374,68 @@ we've reduced the coupling in our code, but we've introduced some significant
 extra complexity.  And the testing story isn't great, either:
 
 
-```ruby
+<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
 describe "Foo" do
   it "adds stuff" do
-    x, y, user = 2, 3, double()
-    user.stub(:all) { [1,2,3] }
+    x, y, users = 2, 3, [1,2,3]
+    <span class="fragment">user = UserTest.new(users)
+    foo_result = FooResultTest.new
 
-    foo_result = double()
-    foo_result.stub(:insert)
+    foo = Foo.new(UserTest.new, FooResultTest.new)</span>
 
-    expect(foo_result)
-      .to receive(:insert).with(x, y, 3)
-
-    foo = Foo.new(user, foo_result)
-
-    expect(foo.my_func(x, y)).to eq(x + y + 3)
+    <span class="fragment">expect(foo_result.values).to include([x, y, 3])
+    expect(foo.my_func(x, y)).to eq(x + y + 3)</span>
   end
 end
-```
+</code></pre></div>
 
 Note:
 
-This is clearly worse than before. If we're going by the metric that easier to
-test code is better code, then this code *really* sucks. So dependency injection
-is clearly not the obvious solution to this problem.
+To test a dependency injection thing, first we initialize some values.
 
-You can write helpers and stuff to obscure the difficulty of testing this. But
-that doesn't make it *better*, it just hides the badness. Sometimes that's
-great! Perfect is the enemy of good etc.
+Then we create our test versions of the dependencies, and initialize the foo class with these dudes.
+
+Finally, we can make some assertions about the return value.
+
+This is clearly worse than before. If we're going by the metric that easier to
+test code is better code, then this code *really* sucks. We're dependent on
+observing mutability and other complexities. So dependency injection is clearly
+not the obvious solution to this problem, though it does make our code more extensible.
 
 
 # How to even do that in Haskell
+
+(it's just a function) <!-- .element: class="fragment" -->
 
 Note:
 
 So how do we even do that in Haskell? Well, everything is just a function, so you just pass functions.
 
 
-```haskell
-myFuncAbstract 
-    :: IO [a]               -- select users
-    -> (FooResult -> IO ()) -- insert FooResult
-    -> Int -> Int -> IO Int -- The rest of the function
-myFuncAbstract selectUsers insert x y = do
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
+<span class="fragment">myFuncAbstract 
+    :: IO [a]               
+    -- ^ select users
+    -> (FooResult -> IO ()) 
+    -- ^ insert FooResult
+    -> Int -> Int -> IO Int 
+    -- ^ The rest of the function</span>
+myFuncAbstract <span class="fragment">selectUsers insert</span> x y = do
     z <- fmap length selectUsers
     insert (FooResult x y z)
     pure (x + y + z)
 
 myFunc = myFuncAbstract DB.selectUsers DB.insert
-```
+</code></pre></div>
 
 Note:
+
+The type signature changes -- now, instead of doing the work directly, we defer to functions that we accept as parameters.
 
 Here we make selectUsers and insert into functions that we pass in, and for the
 real version, we provide the database functions. The tested version can provide 
 different functions based on what you want to test.
 
 This is about as awkward as the OOP Version! Alas.
-
-
-# Values vs Objects
-
-Note:
-
-Are objects values? Not necessarily. Objects have a notion of identity that is
-separate from the values of their member variables. By default, objects in Ruby
-and most object oriented languages compare each other based on reference
-equality: these two objects are equal iff they refer to the same objet in
-memory. Two users, each with the same name and age, are different if they are
-stored in different places in memory.
-
-
-# Objects
-
-```ruby
-class User
-  attr_reader :name, :age
-  def initialize(name, age)
-    @name = name
-    @age = age
-  end
-end
-
-a = User.new("Matt", 28)
-b = User.new("Matt", 28)
-
-a == b # False!
-```
-
-Note:
-
-Here we've got a User class with name and age. We instantiate two users with the
-same values. THese are different objects, and equality checking returns false for them.
-
-
-# Values
-
-```ruby
-class User
-  # ...
-  def eql?(other)
-    name == other.name && age == other.age
-  end
-```
-
-Note:
-
-Values, on the other hand, are equal if every component of the value is equal. 5
-is equal to 5, regardless of where the two fives are stored in memory. This
-modification to the User class converts it into a value, where two users are now
-equal if their name and age are the same.
-
-
-# Values
-
-[https://github.com/tcrayford/Values](https://github.com/tcrayford/Values)
-
-```ruby
-User = Value.new(:user, :age)
-```
-
-Note:
-
-I'm going to refer to the `Values` library. The above code creates an immutable
-value object with two fields, user and age. Equality is done by comparing the
-members for equality.
+There has to be something better.
+If we could only make testing our effects as easy as testing our values... then we'd be set!

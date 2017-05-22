@@ -28,9 +28,45 @@ html, body, .reveal div, .reveal span, .reveal applet, .reveal object, .reveal i
   font: inherit;
   vertical-align: baseline; }
 
+.reveal code {
+  font-size: 1em; }
+
 .reveal article, .reveal aside, .reveal details, .reveal figcaption, .reveal figure,
 .reveal footer, .reveal header, .reveal hgroup, .reveal menu, .reveal nav, .reveal section {
   display: block; }
+
+img#plain {
+  border: 0;
+  background: 0;
+  box-shadow: none; }
+
+img#ruby-logo {
+  border: 0;
+  background: 0;
+  box-shadow: none;
+  height: 30rem; }
+
+img#haskell-logo {
+  border: 0;
+  background: 0;
+  box-shadow: none;
+  height: 30rem; }
+
+div#lang-logo {
+  position: relative; }
+
+#lang-logo #lang {
+  position: absolute;
+  top: -5rem;
+  right: -5rem; }
+
+img#lang {
+  border: 0;
+  background: 0;
+  box-shadow: none;
+  padding: 10px;
+  height: 10rem;
+  z-index: 10; }
 
 /*********************************************
  * GLOBAL STYLES
@@ -184,8 +220,7 @@ body {
 .reveal pre.stretch code {
   height: 100%;
   max-height: 100%;
-  box-sizing: border-box; 
-  font-size: 1.2em; }
+  box-sizing: border-box; }
 
 /*********************************************
  * CONTROLS
@@ -1144,7 +1179,6 @@ body {
 .reveal .overlay .viewport {
   position: absolute;
   display: -webkit-box;
-  display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
   top: 40px;
