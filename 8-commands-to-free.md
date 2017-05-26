@@ -761,15 +761,45 @@ running directly in IO, we're just constructing a data structure.
 
 # Intrigued?
 
-## It's a free monad
+## It's a free monad <!-- .element: class="fragment" -->
 
 Note:
 
 If you want to learn more about this final evolution of the command pattern,
 the theory behind it is called the free monad. It's super interesting and very
-powerful. Unfortunately, most typed languages can't express it well. Haskell
+powerful. 
+
+
+<div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
+data ChargeCmdF next
+  = Charge User Amount next
+  | UserBalance User (Amount -> next)
+
+<span class="fragment">data Free f a 
+  = Free (f (Free f a)) 
+  | Return a</span>
+
+<span class="fragment">instance (<span class="fragment">Functor f</span>) => Monad (Free f) where
+  fa >>= k = case fa of
+    Free f -> Free (fmap (>>= k) f)
+    Return a -> k a</span>
+    
+<span class="fragment">instance Functor ChargeCmdF where
+  fmap f cmd = case cmd of
+    Charge user amount next ->
+      Charge user amount (f next)
+    UserBalance user next ->
+      UserBalance user (f . next)</span>
+</code></pre></div>
+
+Note:
+
+First, we factor out the business of "what to do next" from our command type.
+This gives us this Free data type.
+All we need to give Free a monad instance is a Functor instance: that's why we call it "The free monad for a functor".
+We can define functor instances for command types like this -- in fact, this functor instance is boilerplate!
+GHC can even derive it for us.
+
+Unfortunately, most typed languages can't express it well. Haskell
 and Scala both have great free monad libraries, but Java/F#/C#/etc. are unable
 to express these things.
-
-Dynamic languages aren't restricted by types, but it's on you to ensure
-everything plugs together well.

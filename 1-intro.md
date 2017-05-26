@@ -4,20 +4,18 @@
 
 Matt Parsons
 
-Note:
-
-Hi! I'm Matt Parsons, and I'd like to talk to you about some cool software
-practices I've been using recently to make better software.
-
 
 ![](image_MattParsons.jpg) <!-- .element: id="plain" -->
 ![](seller-labs-dark.png) <!-- .element: id="plain" -->
 
 Note:
 
-So this is me on the internet, and now I'm me in real life. I write Haskell,
-PHP, and JavaScript for Seller Labs. We make web applications to help Amazon
-merchants make more money.
+Hi! I'm Matt Parsons.
+So this is me on the internet, and now I'm me in real life.
+I write Haskell, PHP, and JavaScript for Seller Labs.
+We make web applications to help Amazon merchants make more money.
+
+I'm going to share a technique we've been using in our PHP codebase to help us write better code.
 
 
 # Better code?
@@ -43,10 +41,9 @@ it be to make these logical changes? Unfortunately, this is difficult to
 understand without actually attempting to do the change, so it's often too
 late.
 
-Testability -- this is a really good metric for good code! Testing code is
-often the first time that you go to actually use the code you wrote. It's the
-first time you have to setup the surrounding code and infrastructure, and you
-get immediate feedback on how good your code is to reuse.
+Testability -- this is a really good metric for good code!
+Testing code is often the first time that you go to actually use the code you wrote.
+It's the first time you have to setup the surrounding code and infrastructure, and you get immediate feedback on how good your code is to reuse.
 
 
 # Test Driven Design
@@ -62,6 +59,7 @@ get immediate feedback on how good your code is to reuse.
 
 Note:
 
+Test driven development is essentially the idea that:
 If it sucks to write tests for your code, it probably sucks to use your code.
 
 
@@ -78,7 +76,7 @@ Note:
 
 Writing tests first is a great proxy for writing good code.
 You get immediate feedback on your library design.
-Having "tests" to cover correctness and find bugs is just about a nice side effect. 
+Having tests to cover correctness and find bugs is just about a nice side effect. 
 
 
 # TDD is hard!

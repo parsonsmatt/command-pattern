@@ -47,13 +47,13 @@ class Foo
   end
 end
 
-# New:
+<span class="fragment"># New:
 class Foo
   def my_func(x, y, z)
     FooResult.insert(x, y, z)
     x + y + z
   end
-end
+end</span>
 </code></pre></div>
 
 Note:

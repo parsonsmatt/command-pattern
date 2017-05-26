@@ -30,6 +30,7 @@ end
 
 Note:
 
+Let's look at the imperative formulation of this logic.
 This method takes a user and a plan that we want to subscribe them to.
 We're going to iterate over all the users current subscriptions and cancel anything on the same product.
 Then we finally subscribe them to that plan.
@@ -154,8 +155,7 @@ describe "Subscribe" $ do
 Note:
 
 Here's that test in Haskell. It's basically the same thing, and a pretty clear
-declaration of our business logic. If we have arbitrary instances for our
-types, then we can do something similar:
+declaration of our business logic. 
 
 
 <div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
@@ -193,32 +193,6 @@ we generated.
 
 We can describe properties of our business logic too. Then we can generate
 random values and assert that they hold.
-
-
-<div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
-describe "Add" do
-  it "is commutative" do
-    100.times do
-      x, y = 2.times { Random::rand }
-      expect(x + y).to eq(y + x)
-    end
-  end
-
-  it "is associative" do
-    100.times do
-      x, y, z = 3.times { Random::rand }
-      expect((x + y) + z).to eq(x + (y + z))
-    end
-  end
-end 
-</code></pre></div>
-
-Note:
-
-So here are the property tests for adding two numbers. 
-It can kinda be tricky to express business logic in such a mathematical way.
-Fortunately, specifications for business logic often resemble these sorts of properties.
-If we can write our requirements as clear specifications, then we can get some properties.
 
 
 # Properties:

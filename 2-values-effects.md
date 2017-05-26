@@ -6,8 +6,7 @@
 
 Note:
 
-So, when we talk about "doing stuff" in computer programming, we have a bunch of different ways of organizing it. 
-Typically, we break functionality up into small pieces -- we call them methods in OOP land, and functions in fantasyland.
+So, when we talk about "doing stuff" in computer programming, we're typically talking about methods or functions.
 
 
 # Input and Output
@@ -17,9 +16,10 @@ Typically, we break functionality up into small pieces -- we call them methods i
 
 Note:
 
-Let's talk about how we *use* methods and functions. Generally, we can talk
-about a function in terms of the inputs and outputs that it has. We can also
-talk about a function in terms of the values and effects that it deals with.
+In order to reason about our programs, we have to be able to talk about them.
+How can we talk about our functions?
+Generally, we can talk about a function in terms of the inputs and outputs that it has.
+We can also talk about a function in terms of the values and effects that it deals with.
 
 
 ![](1000px-Ruby_logo.svg.png) <!-- .element: id="ruby-logo", style: "size: 100" --> ![](haskell_logo.svg) <!-- .element: id="haskell-logo" -->
@@ -29,7 +29,8 @@ talk about a function in terms of the values and effects that it deals with.
 Note:
 
 The code in this talk will be a combination of Ruby and Haskell.
-Ruby's a dynamically typed object oriented programming language, and Haskell is a statically typed pure functional programming language.
+Ruby is a dynamically typed object oriented programming language.
+Haskell is a statically typed pure functional programming language.
 We'll get to see how the same technique works out pretty great in both languages!
 
 
