@@ -547,6 +547,11 @@ Here we're going to update the do_next property on this object.
 We call *self*'s do_next callback with the balance.
 Then we call 'and_then' on the resulting value.
 
+
+## The Scary 'M' Word
+
+# Module <!-- .element: class="fragment" -->
+
 It turns out, none of this depends on any specific details of the class.
 That means we can extract it out to the scary 'M' word: MODULE!
 
