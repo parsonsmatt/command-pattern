@@ -407,14 +407,12 @@ earlier, we've got our hash of handlers that we're initialized with.
   # ...
 
   def interpret(command)
-    case command
-    when Return
-      return command.result
-    else
-      handler = handlers[command.class]
-      next_command = handler.run(command)
-      self.interpret(next_command)
-    end
+    <span class="fragment">loop do
+      <span class="fragment">return command.result if Return === command</span>
+
+      <span class="fragment">handler = handlers[command.class]
+      command = handler.run(command)</span>
+    end</span>
   end
 end
 </code></pre></div>
@@ -546,11 +544,6 @@ Here we're going to update the do_next property on this object.
 
 We call *self*'s do_next callback with the balance.
 Then we call 'and_then' on the resulting value.
-
-
-## The Scary 'M' Word
-
-# Module <!-- .element: class="fragment" -->
 
 It turns out, none of this depends on any specific details of the class.
 That means we can extract it out to the scary 'M' word: MODULE!
