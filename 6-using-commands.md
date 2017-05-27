@@ -200,13 +200,6 @@ executeCommands
   -> IO [a]
 executeCommands commands interpreter =
   traverse interpreter commands
-
-<span class="fragment">executeCommands' 
-  :: (Traversable t, Applicative f)
-  => t SubscribeCommand
-  -> (SubscribeCommand -> f a)
-  -> f (t a)
-executeCommands' = for</span>
 </code></pre></div>
 
 Note:
@@ -214,12 +207,10 @@ Note:
 In Haskell, if you want to iterate over a collection along with some effect, then you want to use Traversable.
 A Haskell traversal is like an effectful map, or what you're used to seeing in non-pure languages.
 
-We actually have a much more general type signature of for -- it's really general and highly useful!
 
+# Simple <span class="fragment">Data</span>
 
-# Simple Data
-
-## Is Easy <!-- .element: class="fragment" -->
+# Is Easy
 
 Note:
 

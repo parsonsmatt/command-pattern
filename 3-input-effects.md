@@ -1,6 +1,6 @@
 # Input Effects
 
-# ->
+# $\to$
 
 # Input Value
 
@@ -10,7 +10,6 @@ Maybe we can turn our effects into values?
 
 
 <div id="lang-logo"> <img src="1000px-Ruby_logo.svg.png" id="lang"/> <pre><code class="lang-ruby hljs" data-trim data-noescape>
-# Ruby
 class Foo
   def my_func(x, y)         
     z = User.all.length
@@ -82,9 +81,9 @@ describe Foo do
   it "adds stuff" do
     x, y, z = 1, 2, 3
 
-    allow(FooResult)
+    <span class="fragment">allow(FooResult)
       .to receive(:insert)
-      .with(x, y, z)
+      .with(x, y, z)</span>
 
     expect(Foo.new.my_func(x, y, z)).to eq 6
   end
@@ -93,7 +92,10 @@ end
 
 Note:
 
-Three lines of test code. One of those is just initialize values. Nice!
+Here's our test for this.
+We have verified now that we get the correct value output for a given value input.
+
+We still need to use a stub to ensure that we get the right *effect* output though.
 
 
 <div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>

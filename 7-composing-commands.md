@@ -263,8 +263,8 @@ end
 })
 
 user_handlers = ComposeInterpreters.new({
-  Delete => StripeUserDelete.new,
-  Create => StripeUserCreate.new
+  Delete    => StripeUserDelete.new,
+  Create    => StripeUserCreate.new
 })</span>
 
 <span class="fragment">stripe_manager = 

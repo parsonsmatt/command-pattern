@@ -344,8 +344,8 @@ Here we initialize it with a mapping from user IDs to their balances, and when w
 
 <div id="lang-logo"><img src="haskell_logo.svg" id="lang"/><pre><code class="lang-haskell hljs" data-trim data-noescape>
 chargeLocally 
-  :: ChargeCommand 
-  -> State (Map UserId Amount) ()
+  :: ChargeCommand a
+  -> State (Map UserId Amount) a
 chargeLocally (UserBalance user andThen) = do
   balance <- gets (Map.lookup (userId user))
   chargeLocally (andThen balance)
@@ -544,6 +544,13 @@ Here we're going to update the do_next property on this object.
 
 We call *self*'s do_next callback with the balance.
 Then we call 'and_then' on the resulting value.
+
+
+# The Scary 'M' Word
+
+<h1 class="fragment"> Module</h1>
+
+Note:
 
 It turns out, none of this depends on any specific details of the class.
 That means we can extract it out to the scary 'M' word: MODULE!
